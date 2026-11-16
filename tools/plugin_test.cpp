@@ -1,0 +1,493 @@
+// Headless tests for Transistor 808: modes, writing, variations, 2nd part, fills, auto fill, tracks,
+// swing, pre-scale, host jumps, MIDI, state; writes audio and editor snapshots.
+#include <juce_audio_utils/juce_audio_utils.h>
+#include "../Source/PluginProcessor.h"
+#include "../Source/PluginEditor.h"
+
+static int failures = 0;
+static void check (bool ok, const char* what)
+{
+    std::printf ("%s  %s\n", ok ? "ok  " : "FAIL", what);
+    if (! ok) ++failures;
+}
+
+struct FakeHost : juce::AudioPlayHead
+{
+    bool playing = false;
+    double ppq = 0.0, bpm = 120.0;
+    juce::Optional<PositionInfo> getPosition() const override
+    {
+        PositionInfo p;
+        p.setIsPlaying (playing);
+        p.setPpqPosition (ppq);
+        p.setBpm (bpm);
+        return p;
+    }
+};
+
+int main (int argc, char** argv)
+{
+    juce::ScopedJuceInitialiser_GUI init;
+    const juce::File outDir (argc > 1 ? juce::File::getCurrentWorkingDirectory().getChildFile (argv[1]) : juce::File::getCurrentWorkingDirectory());
+    outDir.createDirectory();
+    using P = Unit808Processor;
+
+    P proc;
+    FakeHost host;
+    proc.setPlayHead (&host);
+    const double sr = 48000.0;
+    const int block = 256;
+    proc.prepareToPlay (sr, block);
+    juce::AudioBuffer<float> buf (2, block);
+    auto setParam = [&] (const char* id, float v) { auto* p = proc.apvts.getParameter (id); p->setValueNotifyingHost (p->convertTo0to1 (v)); };
+    juce::ModifierKeys none, shift (juce::ModifierKeys::shiftModifier), alt (juce::ModifierKeys::altModifier);
+
+    std::vector<float> rec;
+    struct StepLog { long long sample; int slot, var, part, step; };
+    std::vector<StepLog> log;
+    long long t = 0;
+    int bad = 0, lastSeen = -2, lastSlot = -1, lastPart = -1;
+    auto run = [&] (int blocks, juce::MidiBuffer* midiIn = nullptr)
+    {
+        for (int b = 0; b < blocks; ++b)
+        {
+            juce::MidiBuffer midi;
+            if (midiIn && b == 0) midi = *midiIn;
+            proc.processBlock (buf, midi);
+            if (host.playing) host.ppq += block / sr * host.bpm / 60.0;
+            const int st = proc.getPlayStep();
+            if (st >= 0 && (st != lastSeen || proc.getPlaySlot() != lastSlot || proc.getPlayPart() != lastPart))
+                log.push_back ({ t, proc.getPlaySlot(), proc.getPlayVar(), proc.getPlayPart(), st });
+            lastSeen = st; lastSlot = proc.getPlaySlot(); lastPart = proc.getPlayPart();
+            for (int i = 0; i < block; ++i) { const float v = buf.getSample (0, i); if (! std::isfinite (v)) ++bad; rec.push_back (v); }
+            t += block;
+        }
+    };
+    const int blocksPerBar = (int) std::ceil (sr * 2.0 / block);   // 120 BPM: one 16-step bar = 2 s
+
+    check (proc.getMode() == P::ManualPlay && proc.getInstrument() == 1 && proc.getBasicVar() == P::VarA, "defaults: Manual Play, BD, variation A");
+
+    // ---- write rhythm 1, variation A, 1st part: a basic beat
+    setParam ("mode", P::FirstPart);
+    auto write = [&] (int inst, std::initializer_list<int> steps) { setParam ("instrument-select", (float) inst); for (int s : steps) proc.stepKey (s, none); };
+    write (1, { 0, 6, 10 });                       // BD
+    write (2, { 4, 12 });                          // SD
+    write (11, { 0, 2, 4, 6, 8, 10, 12, 14 });     // CH
+    write (0, { 0, 8 });                           // AC
+    const auto& a1 = proc.memory.rhythm[0].part[0][0];
+    check (a1.rows[1].load() == ((1 << 0) | (1 << 6) | (1 << 10)) && a1.rows[0].load() == 0x0101, "1st Part writes the selected instrument (BD, AC)");
+    setParam ("instrument-select", 1.0f);
+    proc.stepKey (6, none);
+    check (! a1.cell (1, 6) && a1.rows[0].load() == 0x0101, "pressing a set step again clears it (only on the selected instrument)");
+    proc.stepKey (6, none);
+    check (a1.cell (1, 6), "and sets it again");
+
+    // step number: CLEAR then a step key, or Shift-click
+    proc.clearKey (none);
+    check (proc.isStepNumberArmed(), "CLEAR in 1st Part arms STEP NUMBER");
+    proc.stepKey (11, none);
+    check (a1.length.load() == 12 && ! proc.isStepNumberArmed(), "CLEAR + step 12: the part has 12 steps");
+    proc.stepKey (15, shift);
+    check (a1.length.load() == 16, "Shift-click step 16: back to 16 steps");
+
+    // variation B: the lever chooses which variation is written
+    setParam ("basic-variation", P::VarB);
+    write (1, { 0, 8 });
+    check (proc.memory.rhythm[0].part[1][0].rows[1].load() == 0x0101 && a1.rows[1].load() != 0x0101, "lever on B: writes variation B");
+
+    // 2nd part of variation A
+    setParam ("basic-variation", P::VarA);
+    setParam ("mode", P::SecondPart);
+    check (proc.memory.rhythm[0].part[0][1].length.load() == 0, "2nd part is unused until written");
+    write (3, { 0, 4, 8, 12 });                    // LT
+    check (proc.memory.rhythm[0].part[0][1].length.load() == 16 && proc.memory.rhythm[0].part[0][1].rows[3].load() == 0x1111, "writing the 2nd part makes it 16 steps");
+    proc.clearKey (alt);
+    check (proc.memory.rhythm[0].part[0][1].rows[3].load() == 0, "Alt-CLEAR clears the instrument in the part");
+    write (3, { 0, 4, 8, 12 });
+
+    // fill pattern (slot 13 = step key 13) variation A
+    setParam ("mode", P::ManualPlay);
+    proc.stepKey (12, none);
+    check (proc.getSelectedFill() == 12 && proc.getSelectedSlot() == 12, "Manual Play: step key 13 picks intro/fill 1");
+    setParam ("mode", P::FirstPart);
+    write (2, { 0, 2, 4, 6, 8, 10, 12, 14 });     // snare roll
+    setParam ("mode", P::ManualPlay);
+    proc.stepKey (0, none);                        // back to rhythm 1
+
+    // ---- play: variation A = A1 then A2 (2nd part)
+    host.playing = true; host.ppq = 0.0;
+    log.clear();
+    run (blocksPerBar * 2 + 2);
+    bool order = log.size() >= 32;
+    for (size_t i = 0; i < 32 && order; ++i) order = log[i].slot == 0 && log[i].var == 0 && log[i].part == (i < 16 ? 0 : 1) && log[i].step == (int) (i % 16);
+    check (order, "Manual Play, variation A with a 2nd part: plays 1st part then 2nd part, 16 steps each");
+    // step timing: 16ths at 120 BPM = 6000 samples, first step at 0
+    bool timing = log.size() >= 17;
+    for (size_t i = 1; i < 17 && timing; ++i) timing = std::llabs ((log[i].sample - log[i - 1].sample) - 6000) <= block;
+    check (timing && log[0].sample == 0, "steps follow the host tempo (16ths at 120 BPM)");
+
+    // AB alternates
+    host.playing = false; run (2);
+    setParam ("basic-variation", P::VarAB);
+    host.playing = true; host.ppq = 0.0; log.clear();
+    run (blocksPerBar * 3 + 2);
+    check (log.size() >= 48 && log[0].var == 0 && log[16].var == 0 && log[16].part == 1 && log[32].var == 1, "AB: A (both parts) then B");
+    host.playing = false; run (2);
+    setParam ("basic-variation", P::VarA);
+
+    // fill in trigger: TAP while playing -> next measure is the fill
+    host.playing = true; host.ppq = 0.0; log.clear();
+    run (4);
+    proc.tapKey();
+    check (proc.isFillRequested(), "TAP while running requests the fill in");
+    run (blocksPerBar * 3);
+    bool sawFill = false;
+    for (auto& l : log) sawFill |= l.slot == 12;
+    check (sawFill && ! proc.isFillRequested(), "the intro/fill pattern plays in the next measure");
+    host.playing = false; run (2);
+
+    // auto fill every 2 measures (rhythm without 2nd part: write rhythm 2 = slot 1)
+    setParam ("mode", P::ManualPlay); proc.stepKey (1, none);
+    setParam ("mode", P::FirstPart); write (1, { 0, 4, 8, 12 });
+    setParam ("mode", P::ManualPlay);
+    setParam ("auto-fill", 5.0f);                 // "2"
+    host.playing = true; host.ppq = 0.0; log.clear();
+    run (blocksPerBar * 4 + 2);
+    std::vector<int> bars;
+    for (auto& l : log) if (l.step == 0) bars.push_back (l.slot);
+    check (bars.size() >= 4 && bars[0] == 1 && bars[1] == 12 && bars[2] == 1 && bars[3] == 12, "auto fill in 2: every 2nd measure is the fill");
+    host.playing = false; run (2);
+    setParam ("auto-fill", 0.0f);
+
+    // queued rhythm change happens at the end of the measure
+    host.playing = true; host.ppq = 0.0; log.clear();
+    run (8);
+    proc.stepKey (0, none);
+    check (proc.getPendingSlot() == 0, "choosing a rhythm while playing queues it");
+    run (blocksPerBar + 2);
+    check (log.front().slot == 1 && log.back().slot == 0, "it takes over at the next measure");
+    host.playing = false; run (2);
+
+    // ---- compose a track: rhythm 1, rhythm 2, rhythm 2 on track 3
+    setParam ("mode", P::Compose);
+    setParam ("instrument-select", 2.0f);          // track 3
+    proc.stepKey (0, none); proc.tapKey();
+    proc.stepKey (1, none); proc.tapKey(); proc.tapKey();
+    check (proc.memory.trackLen[2].load() == 3 && proc.memory.entry (2, 1).slot == 1, "Compose: step key + TAP adds rhythms to the track");
+    setParam ("mode", P::Play);
+    host.playing = true; host.ppq = 0.0; log.clear();
+    run (blocksPerBar * 5 + 2);
+    bars.clear();
+    for (auto& l : log) if (l.step == 0) bars.push_back (l.slot * 10 + l.part);
+    // rhythm 1 has a 2nd part: 1A1 1A2 2A1 2A1 1A1
+    check (bars.size() >= 5 && bars[0] == 0 && bars[1] == 1 && bars[2] == 10 && bars[3] == 10 && bars[4] == 0, "Play: the track plays in order and loops");
+    host.playing = false; run (2);
+    setParam ("mode", P::Compose); proc.clearKey (none);
+    check (proc.memory.trackLen[2].load() == 0, "Compose: CLEAR clears the track (TRACK CLEAR)");
+
+    // ---- swing and pre-scale
+    setParam ("mode", P::ManualPlay); proc.stepKey (1, none);
+    setParam ("swing", 1.0f);
+    host.playing = true; host.ppq = 0.0; log.clear();
+    run (blocksPerBar / 2);
+    check (log.size() >= 3 && std::llabs ((log[1].sample - log[0].sample) - 9000) <= block, "swing at 10: the 2nd step comes 75 % into the pair");
+    host.playing = false; run (2);
+    setParam ("swing", 0.0f);
+    setParam ("pre-scale", 1.0f);                  // 2 = 32nd notes
+    host.playing = true; host.ppq = 0.0; log.clear();
+    run (blocksPerBar / 2);
+    check (log.size() >= 3 && std::llabs ((log[1].sample - log[0].sample) - 3000) <= block, "PRE-SCALE 2: 32nd-note steps");
+    host.playing = false; run (2);
+    setParam ("pre-scale", 2.0f);
+
+    // host jump: lines the pattern up with the song again
+    host.playing = true; host.ppq = 0.0; log.clear();
+    run (blocksPerBar / 2);
+    host.ppq = 4.0 * 3 + 1.0;                      // bar 4, beat 2
+    log.clear();
+    run (8);
+    check (! log.empty() && log.front().step == 4, "a host jump to beat 2 of a bar plays step 5");
+    host.playing = false; run (4);
+
+    // ---- mode switch mid-bar keeps the place in the bar (no restart, no gap)
+    setParam ("mode", P::ManualPlay); proc.stepKey (0, none);
+    host.playing = true; host.ppq = 0.0; log.clear();
+    run (blocksPerBar / 2 + 3);                    // past step 8
+    setParam ("mode", P::FirstPart);
+    run (blocksPerBar / 4);
+    setParam ("mode", P::ManualPlay);
+    run (blocksPerBar / 4);
+    {
+        bool cont = log.size() >= 16;
+        for (size_t i = 1; i < log.size() && cont; ++i)
+        {
+            const long long gap = log[i].sample - log[i - 1].sample;
+            cont = std::llabs (gap - 6000) <= block && log[i].step == (log[i - 1].step + 1) % 16;
+        }
+        check (cont, "switching MODE while playing keeps every step in place (no restart, no gap)");
+    }
+    host.playing = false; run (2);
+
+    // ---- flam: Alt-click turns the flam of the selected instrument on a step on / off
+    setParam ("mode", P::FirstPart);
+    setParam ("instrument-select", 2.0f);          // SD
+    proc.stepKey (4, alt);
+    const auto& fp = proc.memory.rhythm[0].part[0][0];
+    check (fp.flam (2, 4) && fp.cell (2, 4) && ! fp.flam (1, 4), "Alt-click: flam on the snare's step 5 (only on the snare)");
+    proc.stepKey (6, alt);
+    check (fp.flam (2, 6) && fp.cell (2, 6), "Alt-click on an empty step writes the note with flam");
+    proc.stepKey (6, none);
+    check (! fp.cell (2, 6) && ! fp.flam (2, 6), "erasing a step removes its flam");
+    {
+        // the flammed snare plays twice: a soft grace note on the step and the main hit FLAM ms later
+        for (int i = 1; i < 12; ++i) if (i != 2) setParam (P::muteId (i).toRawUTF8(), 1.0f);
+        setParam ("flam", 1.0f);                   // 40 ms
+        auto playStep5 = [&] ()
+        {
+            host.playing = false; run (blocksPerBar * 3);   // let everything ring out
+            host.playing = true; host.ppq = 0.9; rec.clear();   // just before step 5 (beat 2)
+            run (60);
+            host.playing = false; run (2);
+            int t0 = 0; while (t0 < (int) rec.size() && std::abs (rec[(size_t) t0]) < 0.01f) ++t0;
+            double e = 0; for (int i = t0 + 1920; i < juce::jmin (t0 + 3360, (int) rec.size()); ++i) e += rec[(size_t) i] * rec[(size_t) i];
+            return std::sqrt (e / 1440.0);
+        };
+        const double withFlam = playStep5();
+        auto& wp = proc.memory.rhythm[0].part[0][0];
+        wp.setFlam (2, 4, false);
+        const double without = playStep5();
+        wp.setFlam (2, 4, true);
+        std::printf ("      40-70 ms after the step: with flam %.4f, without %.4f\n", withFlam, without);
+        check (withFlam > without * 1.5, "a flam adds the main hit FLAM (40 ms) after the grace note");
+        for (int i = 1; i < 12; ++i) setParam (P::muteId (i).toRawUTF8(), 0.0f);
+    }
+
+    // ---- mute / solo
+    {
+        auto peakOf = [&] () { host.playing = false; run (blocksPerBar * 3); host.playing = true; host.ppq = 0.0; rec.clear(); run (blocksPerBar); host.playing = false; run (2);
+                                float pk = 0; for (float v : rec) pk = juce::jmax (pk, std::abs (v)); return pk; };
+        setParam ("mode", P::ManualPlay); proc.stepKey (0, none);
+        const float all = peakOf();
+        for (int i = 1; i < 12; ++i) setParam (P::muteId (i).toRawUTF8(), 1.0f);
+        const float muted = peakOf();
+        for (int i = 1; i < 12; ++i) setParam (P::muteId (i).toRawUTF8(), 0.0f);
+        setParam ("solo-cb", 1.0f);                // the rhythm has no cow bell: soloing it silences the rest
+        const float soloEmpty = peakOf();
+        setParam ("solo-cb", 0.0f);
+        setParam ("solo-bd", 1.0f);
+        const float soloBd = peakOf();
+        setParam ("solo-bd", 0.0f);
+        std::printf ("      all %.4f muted %.6f soloEmpty %.6f soloBd %.4f\n", all, muted, soloEmpty, soloBd);
+        check (all > 0.05f && muted < 1e-4f, "muting every instrument silences the rhythm");
+        check (soloEmpty < 1e-4f && soloBd > 0.05f, "solo plays only the soloed instruments");
+    }
+
+    // ---- copy / paste (rhythms only, one clipboard per Transistor 808) with undo
+    {
+        auto same = [] (const unit808::Part& a, const unit808::Part& b)
+        {
+            for (int r = 0; r < unit808::kNumRows; ++r) if (a.rows[r].load() != b.rows[r].load() || a.flams[r].load() != b.flams[r].load()) return false;
+            return a.length.load() == b.length.load();
+        };
+        auto& R = proc.memory.rhythm;
+        proc.copyRhythm (0);
+        check (proc.pasteRhythm (5) && same (R[5].part[0][0], R[0].part[0][0]) && same (R[5].part[0][1], R[0].part[0][1])
+                   && same (R[5].part[1][0], R[0].part[1][0]) && R[5].part[0][0].flam (2, 4),
+               "copy rhythm 1, paste to rhythm 6: both variations, both parts, flams and step numbers");
+        check (! proc.pasteVariation (5, 1), "a rhythm on the clipboard cannot be pasted as a variation");
+        proc.undoPaste();
+        check (R[5].part[0][0].empty() && R[5].part[0][1].length.load() == 0 && ! proc.canUndoPaste(), "undo paste brings rhythm 6 back (empty)");
+        proc.copyVariation (0, 0);
+        const uint16_t bBefore = R[0].part[1][0].rows[1].load();
+        proc.pasteVariation (0, 1);
+        check (same (R[0].part[1][0], R[0].part[0][0]) && same (R[0].part[1][1], R[0].part[0][1]), "copy variation A, paste to variation B");
+        proc.undoPaste();
+        check (R[0].part[1][0].rows[1].load() == bBefore, "undo paste restores variation B");
+        proc.copyPart (0, 0, 0);
+        proc.pastePart (3, 0, 1);
+        check (same (R[3].part[0][1], R[0].part[0][0]), "copy a 1st part, paste into another rhythm's 2nd part");
+        proc.undoPaste();
+        proc.copyRow (0, 0, 0, 11);               // CH of rhythm 1 A 1st part
+        proc.pasteRow (4, 1, 0, 11);
+        check (R[4].part[1][0].rows[11].load() == R[0].part[0][0].rows[11].load() && R[4].part[1][0].rows[1].load() == 0,
+               "copy one instrument (CH) and paste it into another rhythm, nothing else changes");
+        proc.undoPaste();
+        check (R[4].part[1][0].empty(), "undo paste of an instrument");
+        P other;
+        check (other.clipKind() == P::ClipNone, "each Transistor 808 has its own clipboard");
+    }
+
+    // ---- pattern clear: clears the chosen rhythm
+    setParam ("mode", P::PatternClear); proc.stepKey (1, none); proc.clearKey (none);
+    check (proc.memory.rhythm[1].part[0][0].empty(), "Pattern Clear + CLEAR clears the rhythm");
+
+    // ---- MIDI: GM notes play the voices; low conga note plays the conga even with the switch on tom
+    {
+        juce::MidiBuffer m;
+        m.addEvent (juce::MidiMessage::noteOn (10, 36, (juce::uint8) 127), 0);
+        m.addEvent (juce::MidiMessage::noteOn (10, 64, (juce::uint8) 100), 100);
+        rec.clear();
+        run (40, &m);
+        float pk = 0; for (float v : rec) pk = juce::jmax (pk, std::abs (v));
+        check (pk > 0.05f, "MIDI notes play the sounds");
+    }
+
+    // ---- the board inside: the 14 calibration trimmers of the circuit engine, and they change it live
+    {
+        check (P::kNumTrims == 14, "14 calibration trimmers on the board");
+        bool allThere = true;
+        for (int i = 0; i < P::kNumTrims; ++i) allThere &= proc.apvts.getParameter (P::trimId (i).toRawUTF8()) != nullptr;
+        check (allThere, "every trimmer is a parameter (automatable, saved with the project)");
+        auto bdRender = [&] ()
+        {
+            for (int i = 1; i < 12; ++i) setParam (P::muteId (i).toRawUTF8(), i == 1 ? 0.0f : 1.0f);
+            host.playing = false; run (blocksPerBar * 2);
+            juce::MidiBuffer m; m.addEvent (juce::MidiMessage::noteOn (10, 36, (juce::uint8) 127), 0);
+            rec.clear(); run (100, &m);
+            std::vector<float> r = rec;
+            for (int i = 1; i < 12; ++i) setParam (P::muteId (i).toRawUTF8(), 0.0f);
+            return r;
+        };
+        const auto a = bdRender();
+        setParam ("c-bd-tune", 7.0f);
+        const auto b = bdRender();
+        setParam ("c-bd-tune", 0.0f);
+        double pa = 0; for (float v : a) pa = juce::jmax (pa, (double) std::abs (v));
+        double diff = 0; for (size_t i = 0; i < juce::jmin (a.size(), b.size()); ++i) diff = juce::jmax (diff, (double) std::abs (a[i] - b[i]));
+        check (pa > 0.01 && diff > 0.1 * pa, "KICK TUNE trimmer retunes the bass drum");
+        const auto c = bdRender();
+        double same = 0; for (size_t i = 0; i < juce::jmin (a.size(), c.size()); ++i) same = juce::jmax (same, (double) std::abs (a[i] - c[i]));
+        check (same < 0.05 * pa, "back at its factory value the bass drum sounds as before");
+    }
+
+    // ---- state round trip
+    {
+        juce::MemoryBlock mb;
+        setParam ("bd-decay", 0.9f);
+        proc.getStateInformation (mb);
+        P other;
+        other.setStateInformation (mb.getData(), (int) mb.getSize());
+        const auto& o = other.memory.rhythm[0];
+        check (o.part[0][0].rows[1].load() == proc.memory.rhythm[0].part[0][0].rows[1].load() && o.part[0][1].length.load() == 16
+                   && o.part[1][0].rows[1].load() == 0x0101 && other.memory.rhythm[12].part[0][0].rows[2].load() == 0x5555
+                   && other.memory.rhythm[0].part[0][0].flam (2, 4)
+                   && std::abs (other.apvts.getRawParameterValue ("bd-decay")->load() - 0.9f) < 1e-4f,
+               "state: rhythms, parts, lengths, flams and knobs are saved with the project");
+    }
+    check (bad == 0, "no NaN / Inf in the output");
+
+    // ---- a demo: rhythm 1 (A, with 2nd part) four bars with the fill, at 120 BPM
+    {
+        setParam ("bd-decay", 0.45f);
+        setParam ("mode", P::ManualPlay); proc.stepKey (0, none);
+        setParam ("auto-fill", 4.0f);              // fill every 4
+        rec.clear();
+        host.playing = true; host.ppq = 0.0;
+        run (blocksPerBar * 4);
+        host.playing = false; run (blocksPerBar / 2);
+        juce::AudioBuffer<float> out (1, (int) rec.size());
+        out.copyFrom (0, 0, rec.data(), (int) rec.size());
+        juce::WavAudioFormat wav;
+        auto f = outDir.getChildFile ("transistor808_demo.wav");
+        f.deleteFile();
+        std::unique_ptr<juce::OutputStream> os (f.createOutputStream());
+        if (os != nullptr)
+            if (auto w = wav.createWriterFor (os, juce::AudioFormatWriterOptions{}.withSampleRate (sr).withNumChannels (1).withBitsPerSample (24)))
+            { w->writeFromAudioSampleBuffer (out, 0, out.getNumSamples()); }
+    }
+
+    // ---- editor snapshots
+    {
+        setParam ("mode", P::FirstPart);
+        setParam ("instrument-select", 11.0f);
+        std::unique_ptr<juce::AudioProcessorEditor> ed (proc.createEditor());
+        for (float scale : { 0.6f, 1.0f })
+        {
+            ed->setSize ((int) (1870 * scale), (int) (1090 * scale));
+            auto img = ed->createComponentSnapshot (ed->getLocalBounds(), true, 1.0f);
+            auto f = outDir.getChildFile (juce::String ("editor_") + juce::String (juce::roundToInt (scale * 100)) + ".png");
+            f.deleteFile();
+            juce::PNGImageFormat png;
+            if (auto os = std::unique_ptr<juce::OutputStream> (f.createOutputStream())) png.writeImageToStream (img, *os);
+        }
+    }
+
+    // ---- a snapshot showing mute (CB), solo (SD), the selected channel (SD) and flam steps (blue)
+    {
+        setParam ("mode", P::FirstPart);
+        setParam ("instrument-select", 2.0f);
+        proc.stepKey (12, alt);
+        setParam ("mute-cb", 1.0f); setParam ("solo-sd", 1.0f);
+        std::unique_ptr<juce::AudioProcessorEditor> ed (proc.createEditor());
+        ed->setSize (1870, 1090);
+        auto img = ed->createComponentSnapshot (ed->getLocalBounds(), true, 1.0f);
+        auto f = outDir.getChildFile ("editor_features.png");
+        f.deleteFile();
+        juce::PNGImageFormat png;
+        if (auto os = std::unique_ptr<juce::OutputStream> (f.createOutputStream())) png.writeImageToStream (img, *os);
+        setParam ("mute-cb", 0.0f); setParam ("solo-sd", 0.0f);
+        // the board inside, as POWER opens it
+        if (auto* e8 = dynamic_cast<Unit808Editor*> (ed.get())) e8->showBoard (true);
+        auto bimg = ed->createComponentSnapshot (ed->getLocalBounds(), true, 1.0f);
+        auto bf = outDir.getChildFile ("editor_board.png");
+        bf.deleteFile();
+        if (auto os = std::unique_ptr<juce::OutputStream> (bf.createOutputStream())) png.writeImageToStream (bimg, *os);
+        // the STEP keys inside work like the panel ones; the POWER switch and the power supply close the board
+        if (auto* e8 = dynamic_cast<Unit808Editor*> (ed.get()))
+        {
+            const int oldMode = proc.getMode();
+            setParam ("mode", P::FirstPart);
+            auto& bv = e8->boardView();
+            const bool before = proc.stepIsSet (5);
+            bv.keys[5]->onPress ({}); bv.keys[5]->onRelease();
+            const bool after = proc.stepIsSet (5);
+            bv.keys[5]->onPress ({}); bv.keys[5]->onRelease();
+            check (after != before && proc.stepIsSet (5) == before, "board inside: STEP key 6 writes and clears the step");
+            check (unit808ui::BoardView::closesBoard ({ 148.0f, 100.0f }) && unit808ui::BoardView::closesBoard ({ 220.0f, 520.0f })
+                   && ! unit808ui::BoardView::closesBoard ({ 900.0f, 500.0f }), "board inside: POWER switch and power supply close it, the voice board does not");
+            bool closed = false;
+            auto old = bv.onClose;
+            bv.onClose = [&] { closed = true; };
+            bv.keyPressed (juce::KeyPress (juce::KeyPress::escapeKey));
+            bv.onClose = old;
+            check (closed, "board inside: Esc closes it");
+            setParam ("mode", (float) oldMode);
+        }
+        // the MIDI export window
+        if (auto* e8 = dynamic_cast<Unit808Editor*> (ed.get())) { e8->showBoard (false); e8->exportMidi ({}); }
+        auto ximg = ed->createComponentSnapshot (ed->getLocalBounds(), true, 1.0f);
+        auto xf = outDir.getChildFile ("editor_export.png");
+        xf.deleteFile();
+        if (auto os = std::unique_ptr<juce::OutputStream> (xf.createOutputStream())) png.writeImageToStream (ximg, *os);
+    }
+
+    // ---- MIDI export
+    {
+        P::ExportSpec x; x.kind = P::ExRow; x.slot = 0; x.var = 0; x.part = 0; x.row = 1;
+        const auto& pa = proc.memory.rhythm[0].part[0][0];
+        int n = 0; double bars = 0;
+        auto mf = proc.buildMidi (x, &n, &bars);
+        int ons = 0, first = -1, firstVel = 0; bool allBd = true, ch10 = true;
+        auto* tr = mf.getTrack (0);
+        for (auto* ev : *tr) if (ev->message.isNoteOn())
+        {
+            ++ons; allBd &= ev->message.getNoteNumber() == 36; ch10 &= ev->message.getChannel() == 10;
+            if (first < 0) { first = (int) ev->message.getTimeStamp(); firstVel = ev->message.getVelocity(); }
+        }
+        int bits = 0; for (int s = 0; s < 16; ++s) bits += pa.cell (1, s) ? 1 : 0;
+        check (ons == bits && n == bits && allBd && ch10, "MIDI export: one BD row -> its hits as GM note 36 on channel 10");
+        check (first == 0 && firstVel == 127 && std::abs (bars - 1.0) < 1e-9, "MIDI export: accented step 1 at velocity 127, one bar long");
+        x.kind = P::ExPart;
+        int all = 0; for (int r = 1; r < 12; ++r) for (int s = 0; s < 16; ++s) all += pa.cell (r, s) ? (pa.flam (r, s) ? 2 : 1) : 0;
+        proc.buildMidi (x, &n);
+        check (n == all, "MIDI export: a whole part has every hit (flams as two notes)");
+        auto f = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("transistor808_test.mid");
+        check (proc.writeMidi (x, f) && f.getSize() > 30, "MIDI export: writes a .mid file");
+        juce::MidiFile back; juce::FileInputStream in (f);
+        check (back.readFrom (in) && back.getNumTracks() == 1, "MIDI export: the file reads back");
+        f.deleteFile();
+    }
+
+    std::printf ("\n%s (%d failure%s)\n", failures == 0 ? "ALL PASSED" : "FAILED", failures, failures == 1 ? "" : "s");
+    return failures == 0 ? 0 : 1;
+}
