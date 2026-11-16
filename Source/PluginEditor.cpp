@@ -278,16 +278,15 @@ static juce::Image res (const char* name)
 
 void TrimmerLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, int w, int h, float pos, float start, float end, juce::Slider&)
 {
-    // vintage PCB trimmer: the body and the brass shine stay still, only the screwdriver slot turns
-    static const juce::Image body = res ("trimmer_body_png"), face = res ("trimmer_face_png"), slot = res ("trimmer_slot_png");
+    // blue PCB trimmer: the white cross-slot rotor turns under the still blue body's round window
+    static const juce::Image body = res ("trimmer_body_png"), rotor = res ("trimmer_slot_png");
     const float s = (float) juce::jmin (w, h);
     const auto r = juce::Rectangle<float> (s, s).withCentre (juce::Rectangle<int> (x, y, w, h).toFloat().getCentre());
     g.setImageResamplingQuality (juce::Graphics::highResamplingQuality);
-    g.drawImage (body, r, juce::RectanglePlacement::stretchToFit);
-    g.drawImage (face, r, juce::RectanglePlacement::stretchToFit);
     const float a = start + pos * (end - start);
-    const float k = s / (float) juce::jmax (1, slot.getWidth());
-    g.drawImageTransformed (slot, juce::AffineTransform::scale (k).translated (r.getX(), r.getY()).rotated (a, r.getCentreX(), r.getCentreY()));
+    const float k = s / (float) juce::jmax (1, rotor.getWidth());
+    g.drawImageTransformed (rotor, juce::AffineTransform::scale (k).translated (r.getX(), r.getY()).rotated (a, r.getCentreX(), r.getCentreY()));
+    g.drawImage (body, r, juce::RectanglePlacement::stretchToFit);
 }
 
 void TrimmerLookAndFeel::drawBubble (juce::Graphics& g, juce::BubbleComponent&, const juce::Point<float>&, const juce::Rectangle<float>& body)

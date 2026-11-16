@@ -552,6 +552,9 @@ the contact address, the Transistor Labs store, and a button that opens this man
 
 # ================================================================ UPDATE HISTORY
 HISTORY = [
+    ("1.0.1", "", [
+        "New calibration trimmers inside the box: blue PCB trimmers with a white cross-slot rotor that turns",
+    ]),
     ("1.0.0", "", [
         "First release of Transistor 808: the classic Rhythm Composer with every voice simulated in real time from the original circuits, transistor by transistor, from the service schematics",
         "The board inside the box holds the 14 calibration trimmers of the voice board: Kick Tune, the six metal oscillators and their duty, noise level, clap offset, snare and clap revisions, claves feedback and trigger width. They act live, even on a ringing sound; Kick Tune glides smoothly",
