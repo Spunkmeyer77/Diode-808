@@ -1,0 +1,68 @@
+name: Build DIODE 808 Max for Live
+on:
+  push:
+    branches: [main]
+    paths: ['m4l/**', '.github/workflows/m4l.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+defaults:
+  run:
+    working-directory: m4l
+jobs:
+  mac:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build (universal arm64 + x86_64, macOS 12+)
+        run: bash build-macos.sh
+      - name: Verify architectures and minimum macOS
+        run: |
+          bin="build/macos/externals/diode808~.mxo/Contents/MacOS/diode808~"
+          lipo -info "$bin"
+          lipo -info "$bin" | grep -q arm64
+          lipo -info "$bin" | grep -q x86_64
+          otool -l "$bin" | grep -A4 LC_BUILD_VERSION | grep minos
+          otool -l "$bin" | grep -A4 LC_BUILD_VERSION | grep -q "minos 12.0"
+      - name: Zip
+        run: cd build/macos/externals && ditto -c -k --keepParent "diode808~.mxo" ../../../diode808-1.0.0-macos.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac
+          path: m4l/diode808-1.0.0-macos.zip
+  windows:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build (x64)
+        shell: cmd
+        run: build-windows.bat
+      - name: Zip
+        shell: pwsh
+        run: |
+          $f = Get-ChildItem -Recurse build/windows/externals -Filter *.mxe64 | Select-Object -First 1
+          Compress-Archive -Path $f.FullName -DestinationPath diode808-1.0.0-windows.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: m4l/diode808-1.0.0-windows.zip
+  release:
+    needs: [mac, windows]
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: m4l
+      - name: Publish release v1.0.0
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete m4l-1.0.0 --yes --cleanup-tag 2>/dev/null || true
+          gh release create m4l-1.0.0 --target main --title "DIODE 808 for Max for Live 1.0.0" \
+            --notes "DIODE 808 1.0.0 for Max for Live: diode808~ engine (macOS universal, Windows x64), the device and its manual." \
+            diode808-1.0.0-macos.zip diode808-1.0.0-windows.zip "device/DIODE 808.amxd" code/diode808_seq.js code/diode808_engine.js "docs/DIODE 808 - User Manual.pdf" "docs/DIODE 808 - Update History.pdf"
