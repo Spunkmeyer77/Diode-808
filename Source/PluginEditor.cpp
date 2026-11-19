@@ -535,7 +535,7 @@ void AboutOverlay::paint (juce::Graphics& g)
     g.setColour (kOrange);
     g.setFont (font (58.0f));
     g.drawText ("Rhythm Composer", juce::Rectangle<float> (x0, c.getY() + 200.0f, 640.0f, 70.0f), juce::Justification::centredLeft);
-    g.setFont (font (38.0f));
+    g.setFont (font (40.0f).boldened());
     g.drawFittedText ("DIODE 808", juce::Rectangle<float> (c.getRight() - 470.0f, c.getY() + 212.0f, 420.0f, 56.0f).toNearestInt(), juce::Justification::centredRight, 1, 0.7f);
     g.fillRect (x0, c.getY() + 278.0f, c.getWidth() - 96.0f, 3.0f);
 
