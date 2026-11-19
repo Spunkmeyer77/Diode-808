@@ -16,8 +16,11 @@ class Parallel {
 public:
 	// workers: threads besides the caller (0: everything on the caller). onStart runs on each worker
 	// thread as it starts (its index), and onJoin each time a block finds the epoch changed (to join
-	// the host's audio workgroup again): the plugin's hooks for the threads' priority.
-	explicit Parallel(int workers, std::function<void(int)> onStart = {}, std::function<void(int)> onJoin = {});
+	// the host's audio workgroup again): the plugin's hooks for the threads' priority. onStop runs on each
+	// worker thread as it ends, so whatever onStart / onJoin set up on it (a workgroup join) is undone
+	// on the same thread.
+	explicit Parallel(int workers, std::function<void(int)> onStart = {}, std::function<void(int)> onJoin = {},
+	                  std::function<void(int)> onStop = {});
 	~Parallel();
 	Parallel(const Parallel &) = delete;
 	Parallel &operator=(const Parallel &) = delete;
@@ -33,7 +36,7 @@ private:
 	void take(); // runs jobs until none are left to start
 
 	std::vector<std::thread> m_threads;
-	std::function<void(int)> m_onStart, m_onJoin;
+	std::function<void(int)> m_onStart, m_onJoin, m_onStop;
 	std::mutex m_mutex;
 	std::condition_variable m_wake;
 	bool m_quit = false;

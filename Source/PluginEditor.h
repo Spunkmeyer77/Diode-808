@@ -117,6 +117,8 @@ public:
     void drawRotarySlider (juce::Graphics&, int x, int y, int w, int h, float pos, float start, float end, juce::Slider&) override;
     void drawBubble (juce::Graphics&, juce::BubbleComponent&, const juce::Point<float>&, const juce::Rectangle<float>& body) override;
     juce::Font getSliderPopupFont (juce::Slider&) override;
+private:
+    juce::Image body, rotor;   // loaded with the look-and-feel and freed with it (no static images left at quit)
 };
 
 // Right-click menus at double size, in the panel's colours

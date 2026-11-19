@@ -71,6 +71,7 @@ private:
     bool glideKick (int samples);
     void addHit (Voice v, bool accent);
     void workerJoin (int index);
+    void workerLeave (int index);
 };
 
 } // namespace unit808

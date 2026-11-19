@@ -105,7 +105,8 @@ Engine::Engine()
 {
     const int n = workerCount();
     tokens.resize ((size_t) n);
-    parallel = std::make_unique<tr808::Parallel> (n, makeRealtime, [this] (int i) { workerJoin (i); });
+    parallel = std::make_unique<tr808::Parallel> (n, makeRealtime, [this] (int i) { workerJoin (i); },
+                                                 [this] (int i) { workerLeave (i); });
     board = std::make_unique<tr808::VoiceBoard>();
     for (int i = 0; i < NumCal; ++i) want.cal[(size_t) i] = calApplied[(size_t) i] = kCal[i].def;
     board->setCalibration (tr808::unitCalibration());   // the factory values above are this unit's
@@ -124,6 +125,13 @@ void Engine::workerJoin (int index)
     auto& token = tokens[(size_t) index];
     token.reset();
     if (workgroup) workgroup.join (token);
+}
+
+// A worker ending (the plug-in closing): it leaves the host's workgroup on its own thread, as macOS
+// requires; leaving it from another thread when the plug-in is deleted crashes the host on quit.
+void Engine::workerLeave (int index)
+{
+    tokens[(size_t) index].reset();
 }
 
 void Engine::setWorkgroup (const juce::AudioWorkgroup& wg)

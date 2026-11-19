@@ -263,12 +263,6 @@ void Key::paint (juce::Graphics& g)
 }
 
 // ---------------------------------------------------------------------------------------------- Trimmers (as Unit 606)
-TrimmerLookAndFeel::TrimmerLookAndFeel()
-{
-    setColour (juce::BubbleComponent::backgroundColourId, juce::Colour (0xff1a1712));
-    setColour (juce::TooltipWindow::textColourId, juce::Colours::white);
-}
-
 static juce::Image res (const char* name)
 {
     int size = 0;
@@ -276,10 +270,17 @@ static juce::Image res (const char* name)
     return {};
 }
 
+TrimmerLookAndFeel::TrimmerLookAndFeel()
+{
+    body = res ("trimmer_body_png");
+    rotor = res ("trimmer_slot_png");
+    setColour (juce::BubbleComponent::backgroundColourId, juce::Colour (0xff1a1712));
+    setColour (juce::TooltipWindow::textColourId, juce::Colours::white);
+}
+
 void TrimmerLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, int w, int h, float pos, float start, float end, juce::Slider&)
 {
     // blue PCB trimmer: the white cross-slot rotor turns under the still blue body's round window
-    static const juce::Image body = res ("trimmer_body_png"), rotor = res ("trimmer_slot_png");
     const float s = (float) juce::jmin (w, h);
     const auto r = juce::Rectangle<float> (s, s).withCentre (juce::Rectangle<int> (x, y, w, h).toFloat().getCentre());
     g.setImageResamplingQuality (juce::Graphics::highResamplingQuality);
@@ -289,12 +290,12 @@ void TrimmerLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, int 
     g.drawImage (body, r, juce::RectanglePlacement::stretchToFit);
 }
 
-void TrimmerLookAndFeel::drawBubble (juce::Graphics& g, juce::BubbleComponent&, const juce::Point<float>&, const juce::Rectangle<float>& body)
+void TrimmerLookAndFeel::drawBubble (juce::Graphics& g, juce::BubbleComponent&, const juce::Point<float>&, const juce::Rectangle<float>& area)
 {
     g.setColour (juce::Colour (0xff1a1712));
-    g.fillRoundedRectangle (body, 3.0f);
+    g.fillRoundedRectangle (area, 3.0f);
     g.setColour (juce::Colours::black);
-    g.drawRoundedRectangle (body.reduced (0.5f), 3.0f, 1.0f);
+    g.drawRoundedRectangle (area.reduced (0.5f), 3.0f, 1.0f);
 }
 
 juce::Font TrimmerLookAndFeel::getSliderPopupFont (juce::Slider&)

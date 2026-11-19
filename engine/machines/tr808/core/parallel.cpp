@@ -11,8 +11,9 @@
 
 namespace tr808 {
 
-Parallel::Parallel(int workers, std::function<void(int)> onStart, std::function<void(int)> onJoin)
-	: m_onStart(std::move(onStart)), m_onJoin(std::move(onJoin))
+Parallel::Parallel(int workers, std::function<void(int)> onStart, std::function<void(int)> onJoin,
+                   std::function<void(int)> onStop)
+	: m_onStart(std::move(onStart)), m_onJoin(std::move(onJoin)), m_onStop(std::move(onStop))
 {
 	for (int k = 0; k < workers; ++k)
 		m_threads.emplace_back([this, k] { worker(k); });
@@ -77,7 +78,7 @@ void Parallel::worker(int index)
 			std::unique_lock<std::mutex> lock(m_mutex);
 			m_wake.wait(lock, [&] { return m_quit || m_generation != seen; });
 			if (m_quit)
-				return;
+				break;
 			seen = m_generation;
 		}
 		if (const int e = m_epoch.load(); e != epoch) {
@@ -87,6 +88,8 @@ void Parallel::worker(int index)
 		}
 		take();
 	}
+	if (m_onStop)
+		m_onStop(index);
 }
 
 } // namespace tr808
