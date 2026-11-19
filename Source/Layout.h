@@ -18,7 +18,7 @@ constexpr Pad kPads[kNumPads] = {
     { "metal-osc5", "OSC 5", 1180.0f, 494.0f, 38.0f },
     { "metal-osc6", "OSC 6", 1300.0f, 494.0f, 38.0f },
     { "metal-duty", "DUTY", 1420.0f, 494.0f, 38.0f },
-    { "sd-revision", "REVISION", 551.0f, 648.0f, 38.0f },
+    { "sd-revision", "REVISION", 560.0f, 648.0f, 38.0f },
     { "cp-offset", "OFFSET", 740.0f, 648.0f, 38.0f },
     { "cp-revision", "REVISION", 860.0f, 648.0f, 38.0f },
     { "cl-feedback", "FEEDBACK", 1050.0f, 648.0f, 38.0f },

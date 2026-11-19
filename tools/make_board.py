@@ -74,12 +74,12 @@ def main():
         cx, cy, r = p["cx"], p["cy"], p["size"] / 2 + 5
         if p.get("switch"):
             # a two-position slide switch: its solder pads, EARLY / LATE at the ends, the name below
-            for dx in (-14, 0, 14):
-                d.ellipse([(cx + dx - 3.5) * S, (cy + 16) * S, (cx + dx + 3.5) * S, (cy + 23) * S], fill=(196, 182, 140, 255), outline=(120, 105, 70, 255), width=S)
-            text(d, (cx - 30, cy), p["ends"][0], 9.5, anchor="rm")
-            text(d, (cx + 30, cy), p["ends"][1], 9.5, anchor="lm")
+            for dx in (-19, 0, 19):
+                d.ellipse([(cx + dx - 4) * S, (cy + 20) * S, (cx + dx + 4) * S, (cy + 28) * S], fill=(196, 182, 140, 255), outline=(120, 105, 70, 255), width=S)
+            text(d, (cx - 37, cy), p["ends"][0], 12, anchor="rm")
+            text(d, (cx + 37, cy), p["ends"][1], 12, anchor="lm")
             for k, line in enumerate(p["label"].split("\n")):
-                text(d, (cx, cy + r + 9 + k * 12), line, 10.5)
+                text(d, (cx, cy + r + 13 + k * 14), line, 12)
             continue
         d.ellipse([(cx - r) * S, (cy - r) * S, (cx + r) * S, (cy + r) * S], fill=(196, 182, 140, 255), outline=(120, 105, 70, 255), width=S)
         d.ellipse([(cx - r + 3) * S, (cy - r + 3) * S, (cx + r - 3) * S, (cy + r - 3) * S], fill=(24, 92, 48, 255))

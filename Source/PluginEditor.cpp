@@ -344,28 +344,28 @@ struct RevisionSwitch : juce::Slider
     void paint (juce::Graphics& g) override
     {
         const auto c = getLocalBounds().toFloat().getCentre();
-        const auto body = juce::Rectangle<float> (44.0f, 19.0f).withCentre (c);
+        const auto body = juce::Rectangle<float> (62.0f, 27.0f).withCentre (c);
         // shadow on the board, black housing with a lighter top edge
         g.setColour (juce::Colours::black.withAlpha (0.35f));
-        g.fillRoundedRectangle (body.translated (1.2f, 1.8f).expanded (0.5f), 3.0f);
+        g.fillRoundedRectangle (body.translated (1.6f, 2.4f).expanded (0.5f), 4.0f);
         g.setGradientFill (juce::ColourGradient (juce::Colour (0xff3a3d42), body.getX(), body.getY(), juce::Colour (0xff16181b), body.getX(), body.getBottom(), false));
-        g.fillRoundedRectangle (body, 3.0f);
+        g.fillRoundedRectangle (body, 4.0f);
         g.setColour (juce::Colour (0xff0a0b0c));
-        g.drawRoundedRectangle (body, 3.0f, 1.0f);
+        g.drawRoundedRectangle (body, 4.0f, 1.2f);
         // the slot
-        const auto slot = juce::Rectangle<float> (32.0f, 9.0f).withCentre (c);
+        const auto slot = juce::Rectangle<float> (45.0f, 12.0f).withCentre (c);
         g.setColour (juce::Colour (0xff050506));
-        g.fillRoundedRectangle (slot, 2.0f);
+        g.fillRoundedRectangle (slot, 3.0f);
         // the white actuator, slid left (EARLY) or right (LATE)
         const bool late = getValue() >= 0.5;
-        const auto act = juce::Rectangle<float> (15.0f, 13.0f).withCentre ({ c.x + (late ? 8.5f : -8.5f), c.y });
+        const auto act = juce::Rectangle<float> (21.0f, 18.0f).withCentre ({ c.x + (late ? 12.0f : -12.0f), c.y });
         g.setColour (juce::Colours::black.withAlpha (0.5f));
-        g.fillRoundedRectangle (act.translated (0.8f, 1.2f), 2.0f);
+        g.fillRoundedRectangle (act.translated (1.1f, 1.6f), 2.8f);
         g.setGradientFill (juce::ColourGradient (juce::Colour (0xfffbfaf6), act.getX(), act.getY(), juce::Colour (0xffd6d3cb), act.getX(), act.getBottom(), false));
-        g.fillRoundedRectangle (act, 2.0f);
+        g.fillRoundedRectangle (act, 2.8f);
         g.setColour (juce::Colour (0xffa9a69e));
         for (int k = -1; k <= 1; ++k)                      // grip ridges
-            g.drawLine (act.getCentreX() + 3.5f * (float) k, act.getY() + 3.0f, act.getCentreX() + 3.5f * (float) k, act.getBottom() - 3.0f, 1.0f);
+            g.drawLine (act.getCentreX() + 4.8f * (float) k, act.getY() + 4.0f, act.getCentreX() + 4.8f * (float) k, act.getBottom() - 4.0f, 1.2f);
     }
 };
 
@@ -388,7 +388,8 @@ BoardView::BoardView (Unit808Processor& p)
         s->setScrollWheelEnabled (false);
         s->setPopupDisplayEnabled (true, true, this, 900);
         s->setMouseCursor (juce::MouseCursor::PointingHandCursor);
-        s->setBounds (juce::Rectangle<float> (pad.size + 10.0f, pad.size + 10.0f).withCentre ({ pad.cx, pad.cy }).toNearestInt());
+        if (revision) s->setBounds (juce::Rectangle<float> (70.0f, 40.0f).withCentre ({ pad.cx, pad.cy }).toNearestInt());
+        else s->setBounds (juce::Rectangle<float> (pad.size + 10.0f, pad.size + 10.0f).withCentre ({ pad.cx, pad.cy }).toNearestInt());
         addAndMakeVisible (*s);
         const auto id = Unit808Processor::trimId (idx);
         atts.push_back (std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (p.apvts, id, *s));
