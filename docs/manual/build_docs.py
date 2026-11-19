@@ -258,7 +258,7 @@ def manual():
            ("Composing and Playing Rhythm Tracks", 11), ("ADVANCED COURSE", 12, True), ("Control Descriptions", 12),
            ("Step Number, 2nd Part, Clearing, Copy and Paste", 13), ("Pre-Scale, Swing and Flam", 14), ("Writing Flams", 14), ("Sound Controls", 15),
            ("Mute and Solo, Selecting with the Name Windows", 15), ("Playing from MIDI", 16), ("Running in a DAW, Saving, MIDI Mapping", 16),
-           ("How Each Voice Is Modelled", 17), ("Inside the Box (Trimmers)", 18), ("The Revision Switches", 20), ("Exporting MIDI", 21), ("About Window, Window Size, Troubleshooting", 22), ("Specifications, System Requirements", 23)]
+           ("How Each Voice Is Modelled", 17), ("Inside the Box (Trimmers)", 18), ("The Revision Switches, Trigger Width", 20), ("Exporting MIDI", 21), ("About Window, Window Size, Troubleshooting", 22), ("Specifications, System Requirements", 23)]
     d.page('<div class="toc"><div class="sec"><span class="sect">TABLE OF CONTENTS</span></div>'
            + "".join(toc_line(t[0], t[1], len(t) > 2) for t in toc) + "</div>")
 
@@ -492,7 +492,7 @@ Trimmers are saved with your project and can be automated. Their factory values 
 <tr><td>REVISION</td><td>switch, Early / Late (Late): the amplifier&rsquo;s values</td></tr></table>
 <table><tr><th>CLAVES</th><th>RANGE</th></tr><tr><td>FEEDBACK</td><td>490 &ndash; 1000 k&Omega; (500): R313, how long the claves ring</td></tr></table>
 <table><tr><th>NOISE</th><th>RANGE</th></tr><tr><td>LEVEL</td><td>20 &ndash; 350 mV RMS (190): snare, clap, maracas and tom noise</td></tr></table>
-<table><tr><th>TRIGGER</th><th>RANGE</th></tr><tr><td>WIDTH</td><td>0.5 &ndash; 2.0 ms (1.0): the common trigger pulse</td></tr></table>
+<table><tr><th>TRIGGER</th><th>RANGE</th></tr><tr><td>WIDTH</td><td>0.5 &ndash; 2.0 ms (1.0): how hard every hit is struck (see THE TRIGGER WIDTH)</td></tr></table>
 </div><p class="note">Factory values in brackets. Cow Bell Oscillators 1 and 2 also feed the cymbal and hi-hats, with Oscillators 3 to 6.
 The two REVISIONs are slide switches, not trimmers: see THE REVISION SWITCHES.</p>'''),
         "ADVANCED COURSE", True)
@@ -516,7 +516,23 @@ how it rings and how it sits against the noise. Turn SNAPPY down and compare bot
 <p>The resistor sets the operating point of the clap&rsquo;s amplifier, so the switch changes the body and the tail of the clap.
 Compare at the same CLAP OFFSET and velocity, and match the playback level to judge the shape rather than the loudness.
 The MARACAS have their own circuit and are not affected.</p>
-<p class="note">Switching a REVISION while that voice sounds can give a short thump, as on a real circuit.</p></div>'''),
+<p class="note">Switching a REVISION while that voice sounds can give a short thump, as on a real circuit.</p></div>''')
+        + topic("The Trigger Width", '''<div class="cols2">
+<p>On the 808 every hit starts the same way. At each step a one-shot circuit sends out the <b>common trigger</b>, a single
+pulse shared by the whole machine, and the instruments playing on that step let it through to their own trigger circuits.
+The pulse strikes the circuit like a stick strikes a drum. Accented steps raise its level through the accent circuit.
+TRIGGER WIDTH sets how long the pulse lasts: 0.5 to 2.0 ms, 1.0 ms on a factory unit.</p>
+<p>A longer pulse pushes more energy into the instrument before it is left to ring on its own; a shorter one gives a
+lighter strike. Each circuit takes it differently. Going from 0.5 to 2.0 ms, at the same velocity:</p>
+<ul>
+<li><b>Bass Drum:</b> about 4 dB more attack and a fuller body: the resonator is struck harder.</li>
+<li><b>Snare Drum:</b> about 5 dB louder, body and noise alike; the strongest effect.</li>
+<li><b>Rim Shot and Claves:</b> a harder click that rings out noticeably longer.</li>
+<li><b>Toms and Congas:</b> a little more body, about 1 dB.</li>
+<li><b>Hi-Hats, Cymbal and Cow Bell:</b> barely: their envelopes are charged almost fully by any width.</li>
+<li><b>Hand Clap and Maracas:</b> no change: the clap starts its own burst generator from the pulse&rsquo;s edge.</li></ul>
+<p>Accented hits follow the same pattern from their higher level. The width changes how each hit is struck, never when:
+notes stay exactly in time. Try it on a kick or a snare alone, from one end of the range to the other.</p></div>'''),
         "ADVANCED COURSE", True)
 
     d.page(topic("Exporting MIDI", f'''<p>Diode 808 turns its rhythms into standard MIDI clips you can drop into your DAW or save as .mid files.</p>
