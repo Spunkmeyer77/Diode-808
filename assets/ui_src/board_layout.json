@@ -70,11 +70,16 @@
     },
     {
       "id": "sd-revision",
-      "label": "REVISION\nEARLY / LATE",
+      "label": "REVISION",
       "section": "SNARE",
       "cx": 551.0,
       "cy": 648,
-      "size": 38
+      "size": 38,
+      "switch": true,
+      "ends": [
+        "EARLY",
+        "LATE"
+      ]
     },
     {
       "id": "cp-offset",
@@ -86,11 +91,16 @@
     },
     {
       "id": "cp-revision",
-      "label": "REVISION\nEARLY / LATE",
+      "label": "REVISION",
       "section": "CLAP",
       "cx": 860.0,
       "cy": 648,
-      "size": 38
+      "size": 38,
+      "switch": true,
+      "ends": [
+        "EARLY",
+        "LATE"
+      ]
     },
     {
       "id": "cl-feedback",

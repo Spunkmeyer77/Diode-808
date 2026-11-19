@@ -329,10 +329,10 @@ void MenuLookAndFeel::drawPopupMenuSectionHeader (juce::Graphics& g, const juce:
 }
 
 // ---------------------------------------------------------------------------------------------- Board inside
-// A two-position trimmer (the snare and clap revisions): a click flips it between Early and Late.
-struct RevisionTrimmer : juce::Slider
+// The snare and clap revisions: a two-position slide switch (EARLY left, LATE right). A click flips it.
+struct RevisionSwitch : juce::Slider
 {
-    RevisionTrimmer() : juce::Slider (juce::Slider::RotaryVerticalDrag, juce::Slider::NoTextBox) {}
+    RevisionSwitch() : juce::Slider (juce::Slider::RotaryVerticalDrag, juce::Slider::NoTextBox) {}
     void mouseDown (const juce::MouseEvent&) override
     {
         setValue (getValue() >= 0.5 ? getMinimum() : getMaximum(), juce::sendNotificationSync);
@@ -340,6 +340,32 @@ struct RevisionTrimmer : juce::Slider
     void mouseDrag (const juce::MouseEvent&) override {}
     void mouseUp (const juce::MouseEvent&) override {}
     void mouseDoubleClick (const juce::MouseEvent&) override {}
+    void paint (juce::Graphics& g) override
+    {
+        const auto c = getLocalBounds().toFloat().getCentre();
+        const auto body = juce::Rectangle<float> (44.0f, 19.0f).withCentre (c);
+        // shadow on the board, black housing with a lighter top edge
+        g.setColour (juce::Colours::black.withAlpha (0.35f));
+        g.fillRoundedRectangle (body.translated (1.2f, 1.8f).expanded (0.5f), 3.0f);
+        g.setGradientFill (juce::ColourGradient (juce::Colour (0xff3a3d42), body.getX(), body.getY(), juce::Colour (0xff16181b), body.getX(), body.getBottom(), false));
+        g.fillRoundedRectangle (body, 3.0f);
+        g.setColour (juce::Colour (0xff0a0b0c));
+        g.drawRoundedRectangle (body, 3.0f, 1.0f);
+        // the slot
+        const auto slot = juce::Rectangle<float> (32.0f, 9.0f).withCentre (c);
+        g.setColour (juce::Colour (0xff050506));
+        g.fillRoundedRectangle (slot, 2.0f);
+        // the white actuator, slid left (EARLY) or right (LATE)
+        const bool late = getValue() >= 0.5;
+        const auto act = juce::Rectangle<float> (15.0f, 13.0f).withCentre ({ c.x + (late ? 8.5f : -8.5f), c.y });
+        g.setColour (juce::Colours::black.withAlpha (0.5f));
+        g.fillRoundedRectangle (act.translated (0.8f, 1.2f), 2.0f);
+        g.setGradientFill (juce::ColourGradient (juce::Colour (0xfffbfaf6), act.getX(), act.getY(), juce::Colour (0xffd6d3cb), act.getX(), act.getBottom(), false));
+        g.fillRoundedRectangle (act, 2.0f);
+        g.setColour (juce::Colour (0xffa9a69e));
+        for (int k = -1; k <= 1; ++k)                      // grip ridges
+            g.drawLine (act.getCentreX() + 3.5f * (float) k, act.getY() + 3.0f, act.getCentreX() + 3.5f * (float) k, act.getBottom() - 3.0f, 1.0f);
+    }
 };
 
 BoardView::BoardView (Unit808Processor& p)
@@ -353,7 +379,7 @@ BoardView::BoardView (Unit808Processor& p)
         if (idx < 0) continue;
         const bool revision = (idx == unit808::LateClap || idx == unit808::LateSnare);
         std::unique_ptr<juce::Slider> s;
-        if (revision) s = std::make_unique<RevisionTrimmer>();
+        if (revision) s = std::make_unique<RevisionSwitch>();
         else s = std::make_unique<juce::Slider> (juce::Slider::RotaryVerticalDrag, juce::Slider::NoTextBox);
         s->setLookAndFeel (&lnf);
         s->setRotaryParameters (kPi * 1.25f, kPi * 2.75f, true);

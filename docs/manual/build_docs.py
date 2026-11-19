@@ -487,14 +487,14 @@ Trimmers are saved with your project and can be automated. Their factory values 
 <tr><td>OSC 3</td><td>150 &ndash; 1000 Hz (486.39)</td></tr><tr><td>OSC 4</td><td>120 &ndash; 800 Hz (287.82)</td></tr>
 <tr><td>OSC 5</td><td>120 &ndash; 900 Hz (378.58)</td></tr><tr><td>OSC 6</td><td>80 &ndash; 700 Hz (198.83)</td></tr>
 <tr><td>DUTY</td><td>20 &ndash; 80 % (54.5): all six squares</td></tr></table>
-<table><tr><th>SNARE</th><th>RANGE</th></tr><tr><td>REVISION</td><td>Early / Late (Late): the &ldquo;portion changed&rdquo; part values</td></tr></table>
+<table><tr><th>SNARE</th><th>RANGE</th></tr><tr><td>REVISION</td><td>switch, Early / Late (Late): the &ldquo;portion changed&rdquo; part values</td></tr></table>
 <table><tr><th>CLAP</th><th>RANGE</th></tr><tr><td>OFFSET</td><td>0 &ndash; 100 % (37): the clap trim, bursts against tail</td></tr>
-<tr><td>REVISION</td><td>Early / Late (Late): the amplifier&rsquo;s values</td></tr></table>
+<tr><td>REVISION</td><td>switch, Early / Late (Late): the amplifier&rsquo;s values</td></tr></table>
 <table><tr><th>CLAVES</th><th>RANGE</th></tr><tr><td>FEEDBACK</td><td>490 &ndash; 1000 k&Omega; (500): R313, how long the claves ring</td></tr></table>
 <table><tr><th>NOISE</th><th>RANGE</th></tr><tr><td>LEVEL</td><td>20 &ndash; 350 mV RMS (190): snare, clap, maracas and tom noise</td></tr></table>
 <table><tr><th>TRIGGER</th><th>RANGE</th></tr><tr><td>WIDTH</td><td>0.5 &ndash; 2.0 ms (1.0): the common trigger pulse</td></tr></table>
 </div><p class="note">Factory values in brackets. Cow Bell Oscillators 1 and 2 also feed the cymbal and hi-hats, with Oscillators 3 to 6.
-The two REVISION trimmers have only two positions: click one to switch between Early and Late. Switching a REVISION while that voice sounds can give a short thump, as on a real circuit.</p>'''),
+The two REVISIONs are slide switches, not trimmers: click one to move it between EARLY and LATE. Switching a REVISION while that voice sounds can give a short thump, as on a real circuit.</p>'''),
         "ADVANCED COURSE", True)
 
     d.page(topic("Exporting MIDI", f'''<p>Diode 808 turns its rhythms into standard MIDI clips you can drop into your DAW or save as .mid files.</p>
@@ -552,6 +552,11 @@ the contact address, the Transistor Labs store, and a button that opens this man
 
 # ================================================================ UPDATE HISTORY
 HISTORY = [
+    ("1.0.2", "", [
+        "New name: Diode 808 (formerly Transistor 808). It installs as a new plug-in: remove Transistor 808 if you installed 1.0.0 or 1.0.1",
+        "The snare and clap REVISION controls on the board are now two-position slide switches: one click moves them between EARLY and LATE",
+        "Snare LEVEL starts at 10, level with the bass drum",
+    ]),
     ("1.0.1", "", [
         "New calibration trimmers inside the box: blue PCB trimmers with a white cross-slot rotor that turns",
     ]),
