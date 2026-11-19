@@ -68,7 +68,7 @@ P['parameters'].update(params)
 P['dependency_cache'] = [{'name': 'diode808_seq.js', 'bootpath': '.', 'type': 'TEXT', 'implicit': 1},
                          {'name': 'diode808_engine.js', 'bootpath': '.', 'type': 'TEXT', 'implicit': 1},
                          {'name': 'diode808~.mxo', 'type': 'iLaX'}]
-txt = json.dumps(d, indent=1).encode()
+txt = json.dumps(d, indent=1).replace('unit808_engine_v19.js', 'diode808_engine.js').replace('unit808_seq_v19.js', 'diode808_seq.js').encode()
 # unfrozen .amxd: ampf header, instrument device ('iiii'), meta, ptch chunk
 hdr = b'ampf' + struct.pack('<I', 4) + b'iiii' + b'meta' + struct.pack('<I', 4) + struct.pack('<I', 7) + b'ptch' + struct.pack('<I', len(txt) + 1)
 open(OUT, 'wb').write(hdr + txt + b'\0')
