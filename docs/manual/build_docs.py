@@ -612,6 +612,9 @@ the contact address, the Transistor Labs store, and a button that opens this man
 
 # ================================================================ UPDATE HISTORY
 HISTORY = [
+    ("1.0.5", "", [
+        "The DIODE 808 name is back in its regular lettering, on the panel and in the About window",
+    ]),
     ("1.0.4", "", [
         "The REVISION slide switches on the board are larger, with larger EARLY / LATE / REVISION lettering",
         "The DIODE 808 name is bolder, on the panel and in the About window",
