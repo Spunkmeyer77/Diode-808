@@ -612,6 +612,10 @@ the contact address, the Transistor Labs store, and a button that opens this man
 
 # ================================================================ UPDATE HISTORY
 HISTORY = [
+    ("1.0.4", "", [
+        "The REVISION slide switches on the board are larger, with larger EARLY / LATE / REVISION lettering",
+        "The DIODE 808 name is bolder, on the panel and in the About window",
+    ]),
     ("1.0.3", "", [
         "Fixed: quitting the standalone app, or a host such as Ableton Live after using the plug-in, no longer crashes on macOS",
         "Manual: new chapters on the Revision Switches (with the snare and clap part values), the Trigger Width and the Metal Oscillator Duty",
