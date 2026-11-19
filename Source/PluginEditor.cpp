@@ -329,6 +329,19 @@ void MenuLookAndFeel::drawPopupMenuSectionHeader (juce::Graphics& g, const juce:
 }
 
 // ---------------------------------------------------------------------------------------------- Board inside
+// A two-position trimmer (the snare and clap revisions): a click flips it between Early and Late.
+struct RevisionTrimmer : juce::Slider
+{
+    RevisionTrimmer() : juce::Slider (juce::Slider::RotaryVerticalDrag, juce::Slider::NoTextBox) {}
+    void mouseDown (const juce::MouseEvent&) override
+    {
+        setValue (getValue() >= 0.5 ? getMinimum() : getMaximum(), juce::sendNotificationSync);
+    }
+    void mouseDrag (const juce::MouseEvent&) override {}
+    void mouseUp (const juce::MouseEvent&) override {}
+    void mouseDoubleClick (const juce::MouseEvent&) override {}
+};
+
 BoardView::BoardView (Unit808Processor& p)
 {
     board = image (kBoard);
@@ -338,7 +351,10 @@ BoardView::BoardView (Unit808Processor& p)
         int idx = -1;
         for (int i = 0; i < Unit808Processor::kNumTrims; ++i) if (juce::String (Unit808Processor::kTrims[i].pad) == pad.id) idx = i;
         if (idx < 0) continue;
-        auto s = std::make_unique<juce::Slider> (juce::Slider::RotaryVerticalDrag, juce::Slider::NoTextBox);
+        const bool revision = (idx == unit808::LateClap || idx == unit808::LateSnare);
+        std::unique_ptr<juce::Slider> s;
+        if (revision) s = std::make_unique<RevisionTrimmer>();
+        else s = std::make_unique<juce::Slider> (juce::Slider::RotaryVerticalDrag, juce::Slider::NoTextBox);
         s->setLookAndFeel (&lnf);
         s->setRotaryParameters (kPi * 1.25f, kPi * 2.75f, true);
         s->setMouseDragSensitivity (260);

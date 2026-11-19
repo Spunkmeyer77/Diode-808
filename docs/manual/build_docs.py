@@ -494,7 +494,7 @@ Trimmers are saved with your project and can be automated. Their factory values 
 <table><tr><th>NOISE</th><th>RANGE</th></tr><tr><td>LEVEL</td><td>20 &ndash; 350 mV RMS (190): snare, clap, maracas and tom noise</td></tr></table>
 <table><tr><th>TRIGGER</th><th>RANGE</th></tr><tr><td>WIDTH</td><td>0.5 &ndash; 2.0 ms (1.0): the common trigger pulse</td></tr></table>
 </div><p class="note">Factory values in brackets. Cow Bell Oscillators 1 and 2 also feed the cymbal and hi-hats, with Oscillators 3 to 6.
-Switching a REVISION while that voice sounds can give a short thump, as on a real circuit.</p>'''),
+The two REVISION trimmers have only two positions: click one to switch between Early and Late. Switching a REVISION while that voice sounds can give a short thump, as on a real circuit.</p>'''),
         "ADVANCED COURSE", True)
 
     d.page(topic("Exporting MIDI", f'''<p>Diode 808 turns its rhythms into standard MIDI clips you can drop into your DAW or save as .mid files.</p>
