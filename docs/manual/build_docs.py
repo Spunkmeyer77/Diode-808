@@ -258,7 +258,7 @@ def manual():
            ("Composing and Playing Rhythm Tracks", 11), ("ADVANCED COURSE", 12, True), ("Control Descriptions", 12),
            ("Step Number, 2nd Part, Clearing, Copy and Paste", 13), ("Pre-Scale, Swing and Flam", 14), ("Writing Flams", 14), ("Sound Controls", 15),
            ("Mute and Solo, Selecting with the Name Windows", 15), ("Playing from MIDI", 16), ("Running in a DAW, Saving, MIDI Mapping", 16),
-           ("How Each Voice Is Modelled", 17), ("Inside the Box (Trimmers)", 18), ("The Revision Switches, Trigger Width", 20), ("Exporting MIDI", 21), ("About Window, Window Size, Troubleshooting", 22), ("Specifications, System Requirements", 23)]
+           ("How Each Voice Is Modelled", 17), ("Inside the Box (Trimmers)", 18), ("The Revision Switches, Trigger Width", 20), ("The Metal Oscillator Duty", 21), ("Exporting MIDI", 22), ("About Window, Window Size, Troubleshooting", 23), ("Specifications, System Requirements", 24)]
     d.page('<div class="toc"><div class="sec"><span class="sect">TABLE OF CONTENTS</span></div>'
            + "".join(toc_line(t[0], t[1], len(t) > 2) for t in toc) + "</div>")
 
@@ -486,7 +486,7 @@ Trimmers are saved with your project and can be automated. Their factory values 
 <tr><td>COWBELL OSC 1</td><td>250 &ndash; 1200 Hz (558.30)</td></tr><tr><td>COWBELL OSC 2</td><td>350 &ndash; 1700 Hz (823.60)</td></tr>
 <tr><td>OSC 3</td><td>150 &ndash; 1000 Hz (486.39)</td></tr><tr><td>OSC 4</td><td>120 &ndash; 800 Hz (287.82)</td></tr>
 <tr><td>OSC 5</td><td>120 &ndash; 900 Hz (378.58)</td></tr><tr><td>OSC 6</td><td>80 &ndash; 700 Hz (198.83)</td></tr>
-<tr><td>DUTY</td><td>20 &ndash; 80 % (54.5): all six squares</td></tr></table>
+<tr><td>DUTY</td><td>20 &ndash; 80 % (54.5): the waveform of all six (see THE METAL OSCILLATOR DUTY)</td></tr></table>
 <table><tr><th>SNARE</th><th>RANGE</th></tr><tr><td>REVISION</td><td>switch, Early / Late (Late): the &ldquo;portion changed&rdquo; part values</td></tr></table>
 <table><tr><th>CLAP</th><th>RANGE</th></tr><tr><td>OFFSET</td><td>0 &ndash; 100 % (37): the clap trim, bursts against tail</td></tr>
 <tr><td>REVISION</td><td>switch, Early / Late (Late): the amplifier&rsquo;s values</td></tr></table>
@@ -533,6 +533,28 @@ lighter strike. Each circuit takes it differently. Going from 0.5 to 2.0 ms, at 
 <li><b>Hand Clap and Maracas:</b> no change: the clap starts its own burst generator from the pulse&rsquo;s edge.</li></ul>
 <p>Accented hits follow the same pattern from their higher level. The width changes how each hit is struck, never when:
 notes stay exactly in time. Try it on a kick or a snare alone, from one end of the range to the other.</p></div>'''),
+        "ADVANCED COURSE", True)
+
+    d.page(topic("The Metal Oscillator Duty", '''<div class="cols2">
+<p>The cow bell, the cymbal and both hi-hats are made from six square-wave oscillators that run all the time
+(COWBELL OSC 1 and 2, OSC 3 to 6). DUTY shapes the waveform of all six together.</p>
+<p>A square wave flips between high and low over and over. Its <b>duty</b> is the share of each cycle it spends high:
+at 50 % it is high and low for equal time, a perfectly symmetrical square; at 20 % or 80 % it is a narrow pulse,
+high (or low) only briefly.</p>
+<p>The duty decides which overtones each oscillator makes. Near 50 % they are mostly odd harmonics: a hollow, smooth tone.
+Away from 50 % even harmonics come in and the overtones rebalance: the tone gets thinner, more nasal and buzzier,
+and towards the ends of the range brighter and harsher.</p>
+<p>The cymbal and hats mix all six oscillators and filter them, so DUTY changes the whole cloud of metallic overtones:
+how the hats sizzle, how the cymbal shimmers, how much the cow bell bites.</p>
+<ul>
+<li><b>Factory value 54.5 %:</b> on a real 808 the oscillators are not perfect squares. Their simple chip circuits run
+slightly lopsided, and 54.5 % gives that character. Exactly 50 % sounds smoother and more &ldquo;ideal&rdquo; than the original.</li>
+<li><b>All six at once:</b> there is one DUTY for every oscillator.</li>
+<li><b>Only the metal voices:</b> cow bell, cymbal, open and closed hi-hat. The other instruments don&rsquo;t use these oscillators.</li>
+<li><b>Mirror settings sound alike:</b> 30 % and 70 % have nearly the same overtones, one being the other upside down.</li>
+</ul>
+<p>To hear it, play a closed hi-hat pattern and sweep DUTY slowly from 20 % to 80 %: thin and buzzy, smooth around 50 %,
+then buzzy again.</p></div>'''),
         "ADVANCED COURSE", True)
 
     d.page(topic("Exporting MIDI", f'''<p>Diode 808 turns its rhythms into standard MIDI clips you can drop into your DAW or save as .mid files.</p>
