@@ -612,6 +612,10 @@ the contact address, the Transistor Labs store, and a button that opens this man
 
 # ================================================================ UPDATE HISTORY
 HISTORY = [
+    ("1.0.3", "", [
+        "Fixed: quitting the standalone app, or a host such as Ableton Live after using the plug-in, no longer crashes on macOS",
+        "Manual: new chapters on the Revision Switches (with the snare and clap part values), the Trigger Width and the Metal Oscillator Duty",
+    ]),
     ("1.0.2", "", [
         "New name: Diode 808 (formerly Transistor 808). It installs as a new plug-in: remove Transistor 808 if you installed 1.0.0 or 1.0.1",
         "The snare and clap REVISION controls on the board are now two-position slide switches: one click moves them between EARLY and LATE",
