@@ -652,6 +652,16 @@ struct VoiceBoard::Impl {
 	// through a delay of the same length; the group's jacks also come down to the board rate
 	// (voiceOut) through half-bands.
 	int over = 1;
+	// The metal source pauses while none of the voices it feeds (CB, CY, the hats) is awake or about
+	// to be triggered: its outputs are held, the squares keep their phase (Square::next runs on).
+	bool metalOn = true;
+	void updateMetal(uint16_t lines)
+	{
+		bool on = (lines & (kBitCB | kBitCY | kBitOH | kBitCH)) != 0;
+		for (Voice v : kMetal)
+			on = on || units[size_t(v)].awake();
+		metalOn = on;
+	}
 	static constexpr Voice kMetal[3] = {Voice::CB, Voice::CY, Voice::OH}; // the squares feed these
 	static constexpr Voice kGroup[5] = {Voice::CB, Voice::CY, Voice::OH, Voice::SD, Voice::CP};
 	static constexpr int kGroupJackCount = 6;
@@ -695,7 +705,8 @@ struct VoiceBoard::Impl {
 			for (int o = 0; o < 6; ++o)
 				s[sOsc[o]] = osc[size_t(o)].next();
 			s[sWnUp] = wn[j];
-			metal.step(s, window * over);
+			if (metalOn)
+				metal.step(s, window * over);
 			for (Voice v : kGroup)
 				unit(v, *controls).step(s, window * over);
 			if (over > 1)
@@ -831,7 +842,7 @@ void VoiceBoard::setCalibration(const Calibration &c)
 void VoiceBoard::prepare(double hostRate)
 {
 	m_hostRate = hostRate;
-	m_factor = hostRate < 80000 ? 2 : 1;
+	m_factor = hostRate < 80000 && !m_eco ? 2 : 1; // ECO: the board at the host rate (the metal group stays 2x)
 	if (const char *f = std::getenv("TR808_FACTOR")) // tools: force the oversampling
 		m_factor = std::max(1, std::atoi(f));
 	m_rate = hostRate * m_factor;
@@ -960,7 +971,12 @@ void VoiceBoard::prepare(double hostRate)
 	U[size_t(Voice::CB)].quietFloor(1e-3);
 	U[size_t(Voice::CB)].capMove = 25e-3;
 	for (Voice v : {Voice::CY, Voice::OH})
-		U[size_t(v)].quietFloor(1e-4);
+	{
+		// -80 dBFS: the long metal tails sleep sooner (was 1e-4); their envelope capacitors creep
+		// down for seconds after the jack is silent, as the cowbell's C9
+		U[size_t(v)].quietFloor(1e-3);
+		U[size_t(v)].capMove = 25e-3;
+	}
 	im.noise.sleeps = false;
 	im.metal.sleeps = false;
 	const double groupRate = m_rate * im.over;
@@ -1432,6 +1448,7 @@ void VoiceBoard::render(float *out, int n, float *const *jacks)
 {
 	auto &im = *m_impl;
 	const int N = n * m_factor; // board samples
+	im.updateMetal(im.data);
 	if (!im.jobsOk || N < Impl::kJobsMin) {
 		renderInterleaved(out, n, jacks);
 		return;
@@ -1494,7 +1511,8 @@ void VoiceBoard::render(float *out, int n, float *const *jacks)
 			for (int o = 0; o < 6; ++o)
 				s[im.sOsc[o]] = im.osc[size_t(o)].next();
 			s[im.sWnUp] = wn[jj];
-			im.metal.step(s, im.window * over);
+			if (im.metalOn)
+				im.metal.step(s, im.window * over);
 			double *sb = &im.subBuf[(size_t(j) * size_t(over) + size_t(jj)) * size_t(nsub)];
 			for (int k = 0; k < nsub; ++k)
 				sb[k] = s[im.subIdx[size_t(k)]];

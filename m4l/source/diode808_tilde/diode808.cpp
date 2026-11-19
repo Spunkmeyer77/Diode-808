@@ -181,7 +181,8 @@ struct Engine {
     double sampleRate = 0;
     bool syncControls = true;
     std::array<std::atomic<float>, controlCount> values;
-    std::atomic<float> flam{0.4f};               // FLAM knob 0..1 = 5..40 ms
+    std::atomic<float> flam{0.4f};
+    std::atomic<bool> eco{false};                 // ECO: no 2x oversampling               // FLAM knob 0..1 = 5..40 ms
     Controls applied{};
     bool sel[4] = {false, false, false, false};  // conga / claves selected on the shared circuits
     uint16_t pending = 0;                        // hits waiting for the next common trigger
@@ -425,6 +426,39 @@ void status(External* x) {
         gensym(x->engine->prepared.load(std::memory_order_relaxed) ? "armed" : "loaded"), 0, nullptr);
 }
 
+// (Re)builds the board at this rate; the caller holds boardMutex. Live calibration is applied
+// again from the built values by applyLiveCalibration.
+void prepareBoard(Engine& engine, double rate) {
+    engine.board->setEco(engine.eco.load(std::memory_order_relaxed));
+    engine.board->prepare(rate);
+    engine.sampleRate = rate;
+    engine.calApplied = engine.built;
+    engine.kickNow = engine.built[static_cast<size_t>(CalibrationIndex::kickTune)];
+    const auto width = engine.board->calibration().monoMs;
+    engine.pulseSamples = std::max(1, static_cast<int>(std::ceil(rate * (width + 0.2) * 0.001)));
+    engine.syncControls = true;
+    engine.hold = 0;
+    engine.pending = 0;
+    engine.flams.clear();
+    for (auto& l : engine.last) l = 0;
+}
+
+// ECO on/off: the board without its 2x oversampling. Rebuilt here (a short gap in the sound).
+void setEco(External* x, double value) {
+    const bool on = value >= 0.5;
+    auto& engine = *x->engine;
+    if (engine.eco.exchange(on) == on) return;
+    if (engine.sampleRate <= 0) return;
+    try {
+        const std::lock_guard lock(engine.boardMutex);
+        engine.prepared.store(false, std::memory_order_relaxed);
+        prepareBoard(engine, engine.sampleRate);
+        engine.prepared.store(true, std::memory_order_relaxed);
+    } catch (const std::exception& error) {
+        object_error(reinterpret_cast<t_object*>(x), "Could not switch ECO: %s", error.what());
+    }
+}
+
 void dsp64(External* x, t_object* chain, short*, double rate, long maxFrames, long) {
     auto& engine = *x->engine;
     engine.prepared.store(false, std::memory_order_relaxed);
@@ -432,17 +466,7 @@ void dsp64(External* x, t_object* chain, short*, double rate, long maxFrames, lo
     try {
         const std::lock_guard lock(engine.boardMutex);
         engine.buffer.resize(maxFrames);
-        engine.board->prepare(rate);
-        engine.sampleRate = rate;
-        engine.calApplied = engine.built;
-        engine.kickNow = engine.built[static_cast<size_t>(CalibrationIndex::kickTune)];
-        const auto width = engine.board->calibration().monoMs;
-        engine.pulseSamples = std::max(1, static_cast<int>(std::ceil(rate * (width + 0.2) * 0.001)));
-        engine.syncControls = true;
-        engine.hold = 0;
-        engine.pending = 0;
-        engine.flams.clear();
-        for (auto& l : engine.last) l = 0;
+        prepareBoard(engine, rate);
         dsp_add64(chain, reinterpret_cast<t_object*>(x), reinterpret_cast<t_perfroutine64>(perform), 0, nullptr);
         engine.prepared.store(true, std::memory_order_relaxed);
     } catch (const std::exception& error) {
@@ -488,10 +512,11 @@ extern "C" C74_EXPORT void ext_main(void*) {
     class_addmethod(cls, reinterpret_cast<method>(control), "control", A_GIMME, 0);
     class_addmethod(cls, reinterpret_cast<method>(calibration), "cal", A_GIMME, 0);
     class_addmethod(cls, reinterpret_cast<method>(setFlam), "flam", A_FLOAT, 0);
+    class_addmethod(cls, reinterpret_cast<method>(setEco), "eco", A_FLOAT, 0);
     class_addmethod(cls, reinterpret_cast<method>(status), "status", 0);
     class_addmethod(cls, reinterpret_cast<method>(assist), "assist", A_CANT, 0);
     class_dspinit(cls);
     class_register(CLASS_BOX, cls);
     engineClass = cls;
-    post("diode808~ 1.0.0 (DIODE 808): Diode 808 circuit engine");
+    post("diode808~ 1.1.0 (DIODE 808): Diode 808 circuit engine");
 }

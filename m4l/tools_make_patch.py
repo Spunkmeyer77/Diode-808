@@ -46,6 +46,7 @@ for b in P['boxes']:
 DIALS = [
  ('d_ac','Accent','Accent',0,1,0.5,'control accent'), ('d_flam','Flam','Flam',0,1,0.4,'flam'),
  ('d_swing','Swing','Swing',0,1,0,'swing'),
+ ('d_eco','Quality','Quality',None,None,0,'eco'),
  ('d_vol','Master Volume','Volume',0,1,0.7,'control volume'), ('d_noise','Noise Level','Noise',20,350,190,'cal noiseRms'),
  ('d_bd_lvl','BD Level','Level',0,1,0.8,'control bdLevel'), ('d_bd_tone','BD Tone','Tone',0,1,0.5,'control bdTone'),
  ('d_bd_decay','BD Decay','Decay',0,1,0.5,'control bdDecay'), ('d_bd_tune','Kick Tune','Tune',-12,12,0,'cal kickTune'),
@@ -64,7 +65,7 @@ params = {}
 for n, (var, lng, sh, lo, hi, init, msg) in enumerate(DIALS):
     y = 40.0 + n * 50
     va = {'parameter_initial': [init], 'parameter_initial_enable': 1, 'parameter_longname': lng, 'parameter_shortname': sh, 'parameter_modmode': 0}
-    if lo is None: va.update({'parameter_type': 2, 'parameter_enum': ['Early', 'Late'], 'parameter_mmax': 1})
+    if lo is None: va.update({'parameter_type': 2, 'parameter_enum': ['HQ', 'ECO'] if msg == 'eco' else ['Early', 'Late'], 'parameter_mmax': 1})
     else: va.update({'parameter_type': 0, 'parameter_mmin': float(lo), 'parameter_mmax': float(hi), 'parameter_unitstyle': 1})
     add({'id': var, 'varname': var, 'maxclass': 'live.dial', 'numinlets': 1, 'numoutlets': 2, 'outlettype': ['', 'float'], 'parameter_enable': 1,
          'patching_rect': [1500.0, y, 44.0, 45.0], 'saved_attribute_attributes': {'valueof': va}})

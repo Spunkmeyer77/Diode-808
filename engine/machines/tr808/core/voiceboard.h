@@ -80,6 +80,9 @@ public:
 	VoiceBoard();
 	~VoiceBoard();
 	void prepare(double hostRate);
+	// ECO: no 2x oversampling of the board below 80 kHz (about 40 % less CPU); call prepare() after.
+	void setEco(bool on) { m_eco = on; }
+	bool eco() const { return m_eco; }
 	void reset(); // every circuit at its operating point, warmed up (a new instance: an 808 that is on)
 	// POWER switched on: every capacitor discharged, the master muted by Q13 for the power-on
 	// detector's 1.5 s while the board charges (docs/model.md, "Sleep and power-on").
@@ -182,6 +185,7 @@ private:
 	Calibration m_cal;
 	double m_hostRate = 48000, m_rate = 96000;
 	int m_factor = 2;
+	bool m_eco = false;
 	Decimator m_decimator;
 	std::vector<float> m_work;
 	std::array<Decimator, kVoices> m_jackDecimators; // the jacks, board rate to host rate

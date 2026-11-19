@@ -2,7 +2,7 @@ set(diode808_tilde_EXTERN_OUTPUT_NAME "diode808~" CACHE STRING "External name" F
 set(C74_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/externals")
 set(AUTHOR_DOMAIN "com.transistorlabs")
 set(BUNDLE_IDENTIFIER "diode808")
-set(GIT_VERSION_TAG "1.0.0")
+set(GIT_VERSION_TAG "1.1.0")
 include("${MAX_SDK_BASE}/script/max-pretarget.cmake")
 add_library(${PROJECT_NAME} MODULE diode808.cpp)
 target_include_directories(${PROJECT_NAME} PRIVATE ${C74_INCLUDES})
