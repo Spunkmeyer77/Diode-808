@@ -258,7 +258,7 @@ def manual():
            ("Composing and Playing Rhythm Tracks", 11), ("ADVANCED COURSE", 12, True), ("Control Descriptions", 12),
            ("Step Number, 2nd Part, Clearing, Copy and Paste", 13), ("Pre-Scale, Swing and Flam", 14), ("Writing Flams", 14), ("Sound Controls", 15),
            ("Mute and Solo, Selecting with the Name Windows", 15), ("Playing from MIDI", 16), ("Running in a DAW, Saving, MIDI Mapping", 16),
-           ("How Each Voice Is Modelled", 17), ("Inside the Box (Trimmers)", 18), ("Exporting MIDI", 20), ("About Window, Window Size, Troubleshooting", 21), ("Specifications, System Requirements", 22)]
+           ("How Each Voice Is Modelled", 17), ("Inside the Box (Trimmers)", 18), ("The Revision Switches", 20), ("Exporting MIDI", 21), ("About Window, Window Size, Troubleshooting", 22), ("Specifications, System Requirements", 23)]
     d.page('<div class="toc"><div class="sec"><span class="sect">TABLE OF CONTENTS</span></div>'
            + "".join(toc_line(t[0], t[1], len(t) > 2) for t in toc) + "</div>")
 
@@ -494,7 +494,29 @@ Trimmers are saved with your project and can be automated. Their factory values 
 <table><tr><th>NOISE</th><th>RANGE</th></tr><tr><td>LEVEL</td><td>20 &ndash; 350 mV RMS (190): snare, clap, maracas and tom noise</td></tr></table>
 <table><tr><th>TRIGGER</th><th>RANGE</th></tr><tr><td>WIDTH</td><td>0.5 &ndash; 2.0 ms (1.0): the common trigger pulse</td></tr></table>
 </div><p class="note">Factory values in brackets. Cow Bell Oscillators 1 and 2 also feed the cymbal and hi-hats, with Oscillators 3 to 6.
-The two REVISIONs are slide switches, not trimmers: click one to move it between EARLY and LATE. Switching a REVISION while that voice sounds can give a short thump, as on a real circuit.</p>'''),
+The two REVISIONs are slide switches, not trimmers: see THE REVISION SWITCHES.</p>'''),
+        "ADVANCED COURSE", True)
+
+    d.page(topic("The Revision Switches", '''<div class="cols2">
+<p>Roland changed some parts of the 808&rsquo;s voice circuits during production; the service manual marks them
+&ldquo;PORTION CHANGED&rdquo;. Real 808s exist in both versions, so the two REVISION switches on the board pick which one you play.
+Click a switch to move it between EARLY and LATE.</p>
+<h4>Snare Revision</h4>
+<ul>
+<li><b>LATE</b> (factory setting): the later parts. C58 and C61 are bigger (0.056 &micro;F and 0.015 &micro;F), R191 is 10 k&Omega; and R200 is shorted out.</li>
+<li><b>EARLY</b>: the first production run, with the schematic&rsquo;s original values: C58 0.027 &micro;F, C61 0.0068 &micro;F, R191 8.2 k&Omega;, R200 47 k&Omega;.</li>
+</ul>
+<p>These parts sit in the snare&rsquo;s resonators and trigger path, so the switch changes the pitched body of the snare,
+how it rings and how it sits against the noise. Turn SNAPPY down and compare both settings to hear it clearly.</p>
+<h4>Clap Revision</h4>
+<ul>
+<li><b>LATE</b> (factory setting): R200 (10 k&Omega;, from the emitter of transistor Q70 to the &minus;15 V supply) is fitted in the clap&rsquo;s amplifier, as in later units.</li>
+<li><b>EARLY</b>: R200 is not fitted, as in the first units.</li>
+</ul>
+<p>The resistor sets the operating point of the clap&rsquo;s amplifier, so the switch changes the body and the tail of the clap.
+Compare at the same CLAP OFFSET and velocity, and match the playback level to judge the shape rather than the loudness.
+The MARACAS have their own circuit and are not affected.</p>
+<p class="note">Switching a REVISION while that voice sounds can give a short thump, as on a real circuit.</p></div>'''),
         "ADVANCED COURSE", True)
 
     d.page(topic("Exporting MIDI", f'''<p>Diode 808 turns its rhythms into standard MIDI clips you can drop into your DAW or save as .mid files.</p>
