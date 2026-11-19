@@ -10,7 +10,7 @@ struct KnobDef { const char* id; const char* name; float def; };
 const KnobDef kKnobs[23] = {
     { "ac-level", "Accent", 0.5f },
     { "bd-level", "BD Level", 0.8f }, { "bd-tone", "BD Tone", 0.5f }, { "bd-decay", "BD Decay", 0.5f },
-    { "sd-level", "SD Level", 0.8f }, { "sd-tone", "SD Tone", 0.5f }, { "sd-snappy", "SD Snappy", 0.5f },
+    { "sd-level", "SD Level", 1.0f }, { "sd-tone", "SD Tone", 0.5f }, { "sd-snappy", "SD Snappy", 0.5f },
     { "lt-level", "LT/LC Level", 0.8f }, { "lt-tuning", "LT/LC Tuning", 0.5f },
     { "mt-level", "MT/MC Level", 0.8f }, { "mt-tuning", "MT/MC Tuning", 0.5f },
     { "ht-level", "HT/HC Level", 0.8f }, { "ht-tuning", "HT/HC Tuning", 0.5f },
