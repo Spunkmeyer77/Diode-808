@@ -24,7 +24,7 @@
 
 namespace unit808 {
 
-// The Transistor 808 calibration window, control for control (same ranges and factory values).
+// The Diode 808 calibration window, control for control (same ranges and factory values).
 const CalDef kCal[NumCal] = {
     { "cb-osc1",   "Cowbell Oscillator 1",  250.0f, 1200.0f, 558.3f,  "Hz" },
     { "cb-osc2",   "Cowbell Oscillator 2",  350.0f, 1700.0f, 823.6f,  "Hz" },

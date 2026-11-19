@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Builds docs/Transistor 808 Manual.pdf and docs/Transistor 808 Update History.pdf in the style of a classic
+"""Builds docs/Diode 808 Manual.pdf and docs/Diode 808 Update History.pdf in the style of a classic
 early-80s drum machine owner's manual (same layout as the Unit 606 documents).
 
     python3 docs/manual/build_docs.py 0.1.0
@@ -141,7 +141,7 @@ def to_pdf(html_text, out_pdf):
 
 
 def title_page(doc, subtitle, notes_html):
-    doc.page(f'''<div class="titlehead"><div class="model">Transistor 808</div><img src="{BRAND}"></div>
+    doc.page(f'''<div class="titlehead"><div class="model">Diode 808</div><img src="{BRAND}"></div>
 <div class="titlehead2">{subtitle}</div>
 <div class="inotes">{notes_html}</div>
 <img class="thumb" src="{PANEL}">''', cls="title")
@@ -154,7 +154,7 @@ def cover(doc, what):
 
 
 def back(doc, subtitle):
-    doc.page(f'''<div class="titlehead"><div class="model">Transistor 808</div><img src="{BRAND}"></div>
+    doc.page(f'''<div class="titlehead"><div class="model">Diode 808</div><img src="{BRAND}"></div>
 <div class="titlehead2">{subtitle}</div>''', cls="back")
 
 
@@ -249,7 +249,7 @@ def manual():
     d = Doc()
     cover(d, "Owner&rsquo;s Manual")
     title_page(d, "Operation Manual", f'''<h4>Important Notes</h4><ul>
-<li>Transistor 808 keeps everything you write (rhythms, tracks, knobs and switches) inside your DAW project or Live set. Save your project to keep it.</li>
+<li>Diode 808 keeps everything you write (rhythms, tracks, knobs and switches) inside your DAW project or Live set. Save your project to keep it.</li>
 <li>Tempo and transport always follow your DAW.</li>
 <li>This manual describes version {VERSION}.</li></ul>''')
 
@@ -263,36 +263,36 @@ def manual():
            + "".join(toc_line(t[0], t[1], len(t) > 2) for t in toc) + "</div>")
 
     d.page('''<div class="cols3">
-<p>The Transistor Labs Transistor 808 is a computer-controlled Rhythm Composer for your computer, modelled on the 1981 classic.
+<p>The Transistor Labs Diode 808 is a computer-controlled Rhythm Composer for your computer, modelled on the 1981 classic.
 Its sounds are not sampled: every instrument is a real-time simulation of the original voice circuits,
 transistor by transistor, from the service schematics.</p>
 <p>Eleven sound channels play sixteen sounds: Bass Drum, Snare Drum, Low, Mid and Hi Tom or Conga, Rim Shot or Claves,
 Hand Clap or Maracas, Cow Bell, Cymbal, Open Hi-Hat and Closed Hi-Hat, plus ACcent. Each has its own LEVEL control,
 and most have TONE, TUNING, SNAPPY or DECAY controls.</p>
 <p>In this manual each bar of music is called a &ldquo;Rhythm Pattern&rdquo;.</p>
-<p>Transistor 808 memorizes 12 Basic Rhythms and 4 Intro / Fill In patterns. Every one has two variations, A and B, and each
+<p>Diode 808 memorizes 12 Basic Rhythms and 4 Intro / Fill In patterns. Every one has two variations, A and B, and each
 variation has a 1st Part and an optional 2nd Part of up to 16 steps, so a rhythm can be up to 32 steps long. Twelve
 Rhythm Tracks chain the rhythms into songs.</p>
 <p>The BASIC-VARIATION lever plays A, B or A then B; TAP plays a fill on the next bar, and MEASURES AUTO FILL IN plays
 one every 2, 4, 8, 12 or 16 bars.</p>
-<p>Transistor 808 always plays in time with your DAW: it starts when the song plays and follows the song&rsquo;s tempo.
+<p>Diode 808 always plays in time with your DAW: it starts when the song plays and follows the song&rsquo;s tempo.
 The SWING control takes the place of the tempo knob, and FLAM sets the spacing of flammed hits.</p>
 <p>It runs as an AU, VST3 or LV2 plug-in, or as a standalone application, on macOS, Windows and Linux.</p>
 <p>This owner&rsquo;s manual has two courses consisting of a Basic Course and an Advanced Course.</p></div>''', "INTRODUCTION")
 
     d.page(topic("Installation", '''<div class="cols3">
-<h4>macOS</h4><ol><li>Download <b>Transistor-808-''' + VERSION + '''-macOS.pkg</b> and open it.</li>
+<h4>macOS</h4><ol><li>Download <b>Diode-808-''' + VERSION + '''-macOS.pkg</b> and open it.</li>
 <li>The installer is not signed: macOS blocks it the first time. Open System Settings &rarr; Privacy &amp; Security and
 click <b>Open Anyway</b>.</li><li>Click <b>Customize</b> to skip the AU, the VST3 or the application if you like.</li></ol>
 <p>Installed to /Library/Audio/Plug-Ins/Components, /Library/Audio/Plug-Ins/VST3 and /Applications.</p>
-<h4>Windows</h4><ol><li>Run <b>Transistor-808-''' + VERSION + '''-Windows-Setup.exe</b>.</li>
+<h4>Windows</h4><ol><li>Run <b>Diode-808-''' + VERSION + '''-Windows-Setup.exe</b>.</li>
 <li>If SmartScreen appears, click <b>More info &rarr; Run anyway</b>.</li></ol>
 <p>The VST3 goes to C:\\Program Files\\Common Files\\VST3, the application to the Start menu under Transistor Labs.</p>
 <h4>Linux</h4><ol><li>Unpack the <b>.tar.gz</b> and run <b>./install.sh</b>.</li></ol>
-<p>VST3 to ~/.vst3, LV2 to ~/.lv2, the application to ~/.local/bin/Transistor 808.</p>
+<p>VST3 to ~/.vst3, LV2 to ~/.lv2, the application to ~/.local/bin/Diode 808.</p>
 <h4>Loading it in Ableton Live</h4><ol><li>Settings &rarr; Plug-Ins: turn on <b>Use Audio Units v2</b> (Mac) or
-<b>VST3</b>, then click <b>Rescan</b>.</li><li>In the browser, open Plug-Ins &rarr; Transistor Labs &rarr; <b>Transistor 808</b> and
-drag it onto a MIDI track.</li><li>Press Play in Live. Transistor 808 plays in time with the song.</li></ol></div>'''),
+<b>VST3</b>, then click <b>Rescan</b>.</li><li>In the browser, open Plug-Ins &rarr; Transistor Labs &rarr; <b>Diode 808</b> and
+drag it onto a MIDI track.</li><li>Press Play in Live. Diode 808 plays in time with the song.</li></ol></div>'''),
            "BASIC COURSE")
 
     d.page(f'''<div class="topic" style="margin-bottom:0"><div class="tt">Front Panel Layout</div><div class="tb"><h4>FRONT PANEL LAYOUT</h4></div></div>
@@ -302,7 +302,7 @@ drag it onto a MIDI track.</li><li>Press Play in Live. Transistor 808 plays in t
 <p>We will write the Rhythm Pattern shown in Fig. 1 into Basic Rhythm 1, variation A, 1st Part.</p>
 <div class="figcap">Fig. 1</div><div class="box">{step_chart()}</div></div>
 <div><h4>PROCEDURE</h4><ol>
-<li>Load Transistor 808 on a MIDI track (see INSTALLATION).</li>
+<li>Load Diode 808 on a MIDI track (see INSTALLATION).</li>
 <li>Set the MODE selector {C["B"]} to MANUAL PLAY and press STEP key {C["R"]} #1: Basic Rhythm 1 is chosen and its indicator lights.
 <span class="note">Click or drag towards any printed label around the MODE, INSTRUMENT-SELECT and AUTO FILL IN selectors to turn them there.</span></li>
 <li>Set the BASIC-VARIATION lever {C["M"]} to A.</li>
@@ -356,7 +356,7 @@ then write it in 1st PART).</p><h4>PROCEDURE</h4><ol>
            "BASIC COURSE", True)
 
     d.page(topic("Control Descriptions", '<div class="cols3">' +
-        ctl("A", "POWER Switch", "Opens the circuit board inside with its 14 calibration trimmers (see INSIDE THE BOX). Transistor 808 keeps playing; the black POWER switch or the power supply inside closes it again.") +
+        ctl("A", "POWER Switch", "Opens the circuit board inside with its 14 calibration trimmers (see INSIDE THE BOX). Diode 808 keeps playing; the black POWER switch or the power supply inside closes it again.") +
         ctl("B", "MODE Selector", "PATTERN CLEAR, 1st PART and 2nd PART (pattern write), MANUAL PLAY, PLAY and COMPOSE.") +
         ctl("C", "INSTRUMENT-SELECT", "The instrument the STEP keys write (AC, BD, SD, LT, MT, HT, RS, CP, CB, CY, OH, CH). In PLAY and COMPOSE: the Rhythm Track 1 &ndash; 12. Its printed labels also mute and solo (see MUTE AND SOLO).") +
         ctl("D", "CLEAR Button", "PATTERN CLEAR mode: clears the rhythm. COMPOSE: clears the track (TRACK CLEAR). 1st/2nd PART: sets the step number (see ADVANCED COURSE).") +
@@ -393,7 +393,7 @@ as you like; a 2nd Part that was never written is not played.</p>''')
 Paste to variation A / B, Undo paste. The key blinks after a paste.</p></div>
 <div><p><b>Parts and instruments:</b> in 1st or 2nd PART, <b>right-click CLEAR</b> {C["D"]} (or a STEP key) for: Copy this part,
 Copy the selected instrument, Paste into this part, Paste into the selected instrument, Undo paste.</p>
-<p class="note">Copies include accents, flams and step numbers. Each Transistor 808 has its own clipboard; it is not saved with the project.
+<p class="note">Copies include accents, flams and step numbers. Each Diode 808 has its own clipboard; it is not saved with the project.
 Undo paste takes back the last paste.</p></div></div>'''),
         "ADVANCED COURSE", True)
 
@@ -448,7 +448,7 @@ notes with velocity 100 or more are accented (ACCENT sets how strongly), softer 
 <table><tr><th>NOTE</th><th>SOUND</th></tr><tr><td>64</td><td>Low Conga</td></tr><tr><td>63</td><td>Mid Conga</td></tr>
 <tr><td>62</td><td>Hi Conga</td></tr><tr><td>75</td><td>Claves</td></tr><tr><td>70</td><td>Maracas</td></tr></table></div>
 <p class="note">Conga, claves and maracas notes play those sounds whatever the selector switches are set to.</p>''')
-        + topic("Running in a DAW", '''<p>Transistor 808 starts when your song plays and stops with it; START/STOP lights while it runs. It follows
+        + topic("Running in a DAW", '''<p>Diode 808 starts when your song plays and stops with it; START/STOP lights while it runs. It follows
 the song&rsquo;s tempo, and when you jump or loop it lines the rhythm up with the bar again. The standalone application has
 its own clock: press START/STOP, and right-click it to choose the tempo.</p>''')
         + topic("Saving and MIDI Mapping", '''<p>Everything is saved with your project: rhythms, parts, step numbers, tracks, knobs, switches and levers.
@@ -457,7 +457,7 @@ Every control is a plug-in parameter, so you can automate it and map it to a MID
         "ADVANCED COURSE", True)
 
     d.page(topic("How Each Voice Is Modelled", '''<div class="cols2">
-<p>Every sound is worked out while you play: no samples, no recordings. Transistor 808 simulates the 808&rsquo;s voice board as
+<p>Every sound is worked out while you play: no samples, no recordings. Diode 808 simulates the 808&rsquo;s voice board as
 an electronic circuit, sample by sample: every resistor, capacitor, transistor and op-amp of each instrument, from the
 service schematics, solved like a circuit simulator does and run at twice your sample rate.</p>
 <ul>
@@ -474,11 +474,11 @@ the cymbal and hats all six through their band-pass filters and VCAs. A closed h
         "ADVANCED COURSE", True)
 
     d.page(f'''<div class="topic" style="margin-bottom:6px"><div class="tt">Inside the Box</div><div class="tb">
-<p>Flip the POWER switch {C["A"]} to open the circuit board inside. Transistor 808 keeps playing, so you can tune the sounds while the rhythm runs.
+<p>Flip the POWER switch {C["A"]} to open the circuit board inside. Diode 808 keeps playing, so you can tune the sounds while the rhythm runs.
 Drag a trimmer up or down; a read-out shows its value; double-click returns it to its default. The 16 STEP keys on the lower board work just like the ones on the panel (writing, Shift / Alt, dragging, right-click menu) and their LEDs show the same state, with the 1st / 2nd PART lights beside them. To close the board, click the black POWER switch at top left or the power supply (the transformer on the left), or press Esc.
 These are the calibration trimmers of the voice board: the trims and part values that differ from one unit to the next.
 Each one acts live, even on a sound that is still ringing: turn KICK TUNE during a long kick and its tail glides to the new pitch.
-Trimmers are saved with your project and can be automated. Their factory values are those of the unit Transistor 808 is modelled on.</p></div></div>
+Trimmers are saved with your project and can be automated. Their factory values are those of the unit Diode 808 is modelled on.</p></div></div>
 <img class="board" src="{BOARD}">''', "ADVANCED COURSE", True)
     d.page(topic("The Trimmers", '''<div class="cols3">
 <table><tr><th>KICK</th><th>RANGE</th></tr><tr><td>TUNE</td><td>-12 &ndash; +12 semitones (0): scales C41 and C42 in the resonator</td></tr></table>
@@ -497,7 +497,7 @@ Trimmers are saved with your project and can be automated. Their factory values 
 Switching a REVISION while that voice sounds can give a short thump, as on a real circuit.</p>'''),
         "ADVANCED COURSE", True)
 
-    d.page(topic("Exporting MIDI", f'''<p>Transistor 808 turns its rhythms into standard MIDI clips you can drop into your DAW or save as .mid files.</p>
+    d.page(topic("Exporting MIDI", f'''<p>Diode 808 turns its rhythms into standard MIDI clips you can drop into your DAW or save as .mid files.</p>
 <ul><li><b>A rhythm or a variation:</b> right-click a STEP key in MANUAL PLAY, PLAY, PATTERN CLEAR or COMPOSE and choose
 <i>Export rhythm</i> (variation A then B, with their 2nd parts), <i>Export variation A</i> or <i>Export variation B</i>.</li>
 <li><b>A rhythm track (song):</b> in PLAY or COMPOSE the same menu offers <i>Export rhythm track</i> for the track INSTRUMENT-SELECT points at, bar by bar with its fills.</li>
@@ -506,7 +506,7 @@ Switching a REVISION while that voice sounds can give a short thump, as on a rea
 <b>WRITE SWING INTO THE NOTES</b> moves the notes the way SWING plays them (off: straight 16ths).
 <b>LEAVE OUT MUTED / SOLOED-OUT</b> exports only what you hear. Esc or a click outside closes the window.</p>
 <img src="{EXPORT}" style="display:block;width:58%;margin:6px auto">
-<p class="note">Notes are General MIDI drums on channel 10, the same notes Transistor 808 plays from: BD 36, SD 38, LT 41 (conga 64), MT 45 (63), HT 48 (62),
+<p class="note">Notes are General MIDI drums on channel 10, the same notes Diode 808 plays from: BD 36, SD 38, LT 41 (conga 64), MT 45 (63), HT 48 (62),
 RS 37 (claves 75), CP 39 (maracas 70), CB 56, CY 49, OH 46, CH 42; the toms, RS and CP follow their selector switches. Accented steps have velocity 127,
 the others 100; flams are a soft grace note and the main hit after the FLAM time. Tempo is the DAW&rsquo;s, 4/4, PRE-SCALE is respected.</p>'''), "ADVANCED COURSE", True)
 
@@ -515,7 +515,7 @@ the contact address, the Transistor Labs store, and a button that opens this man
         + topic("Window Size", '<p>Drag the bottom-right corner to resize the window, from 40 % to 100 % of the full panel size.</p>')
         + topic("Troubleshooting", '''<table><tr><th>PROBLEM</th><th>REMEDY</th></tr>
 <tr><td>macOS won&rsquo;t open the installer</td><td>System Settings &rarr; Privacy &amp; Security &rarr; Open Anyway.</td></tr>
-<tr><td>Transistor 808 is not in Live&rsquo;s browser</td><td>Settings &rarr; Plug-Ins: turn on Audio Units v2 or VST3, then Rescan.</td></tr>
+<tr><td>Diode 808 is not in Live&rsquo;s browser</td><td>Settings &rarr; Plug-Ins: turn on Audio Units v2 or VST3, then Rescan.</td></tr>
 <tr><td>No sound</td><td>Check MASTER VOLUME; check that the song plays and the rhythm has steps; check that no instrument is muted (dimmed label) or another soloed (red label).</td></tr>
 <tr><td>The STEP keys do not write</td><td>Writing works in 1st PART and 2nd PART. In the other modes the keys choose rhythms.</td></tr>
 <tr><td>A rhythm change waits</td><td>While playing, a new rhythm starts at the next bar (its indicator blinks).</td></tr>
@@ -525,7 +525,7 @@ the contact address, the Transistor Labs store, and a button that opens this man
         "ADVANCED COURSE", True)
 
     d.page(topic("Specifications", f'''<div class="cols3">
-<p><b>&#9744; Transistor 808 &#9744; Rhythm Composer</b></p>
+<p><b>&#9744; Diode 808 &#9744; Rhythm Composer</b></p>
 <p><b>&#9675; Memory</b><br>12 Basic Rhythms + 4 Intro / Fill In, each with variations A and B, each with a 1st and 2nd Part (1 &ndash; 16 steps each)</p>
 <p><b>&#9675; Rhythm Tracks</b><br>12 tracks &times; 64 bars</p>
 <p><b>&#9675; Sound Source</b><br>BD, SD, LT/LC, MT/MC, HT/HC, RS/CL, CP/MA, CB, CY, OH, CH, AC</p>
@@ -556,7 +556,7 @@ HISTORY = [
         "New calibration trimmers inside the box: blue PCB trimmers with a white cross-slot rotor that turns",
     ]),
     ("1.0.0", "", [
-        "First release of Transistor 808: the classic Rhythm Composer with every voice simulated in real time from the original circuits, transistor by transistor, from the service schematics",
+        "First release of Diode 808: the classic Rhythm Composer with every voice simulated in real time from the original circuits, transistor by transistor, from the service schematics",
         "The board inside the box holds the 14 calibration trimmers of the voice board: Kick Tune, the six metal oscillators and their duty, noise level, clap offset, snare and clap revisions, claves feedback and trigger width. They act live, even on a ringing sound; Kick Tune glides smoothly",
         "Full 808-style sequencer: 12 basic rhythms and 4 intro/fill-ins, two parts, variations A/B, auto fill in, rhythm tracks, flams, swing, MIDI export",
         "The voices render on several CPU cores at audio priority",
@@ -584,6 +584,6 @@ def history(extra=None):
 
 
 if __name__ == "__main__":
-    to_pdf(render(manual(), "Transistor 808 Owner's Manual"), DOCS / "Transistor 808 Manual.pdf")
-    to_pdf(render(history(), "Transistor 808 Update History"), DOCS / "Transistor 808 Update History.pdf")
+    to_pdf(render(manual(), "Diode 808 Owner's Manual"), DOCS / "Diode 808 Manual.pdf")
+    to_pdf(render(history(), "Diode 808 Update History"), DOCS / "Diode 808 Update History.pdf")
     print("done")

@@ -1,4 +1,4 @@
-// Headless tests for Transistor 808: modes, writing, variations, 2nd part, fills, auto fill, tracks,
+// Headless tests for Diode 808: modes, writing, variations, 2nd part, fills, auto fill, tracks,
 // swing, pre-scale, host jumps, MIDI, state; writes audio and editor snapshots.
 #include <juce_audio_utils/juce_audio_utils.h>
 #include "../Source/PluginProcessor.h"
@@ -282,7 +282,7 @@ int main (int argc, char** argv)
         check (soloEmpty < 1e-4f && soloBd > 0.05f, "solo plays only the soloed instruments");
     }
 
-    // ---- copy / paste (rhythms only, one clipboard per Transistor 808) with undo
+    // ---- copy / paste (rhythms only, one clipboard per Diode 808) with undo
     {
         auto same = [] (const unit808::Part& a, const unit808::Part& b)
         {
@@ -314,7 +314,7 @@ int main (int argc, char** argv)
         proc.undoPaste();
         check (R[4].part[1][0].empty(), "undo paste of an instrument");
         P other;
-        check (other.clipKind() == P::ClipNone, "each Transistor 808 has its own clipboard");
+        check (other.clipKind() == P::ClipNone, "each Diode 808 has its own clipboard");
     }
 
     // ---- pattern clear: clears the chosen rhythm
@@ -388,7 +388,7 @@ int main (int argc, char** argv)
         juce::AudioBuffer<float> out (1, (int) rec.size());
         out.copyFrom (0, 0, rec.data(), (int) rec.size());
         juce::WavAudioFormat wav;
-        auto f = outDir.getChildFile ("transistor808_demo.wav");
+        auto f = outDir.getChildFile ("diode808_demo.wav");
         f.deleteFile();
         std::unique_ptr<juce::OutputStream> os (f.createOutputStream());
         if (os != nullptr)
@@ -481,7 +481,7 @@ int main (int argc, char** argv)
         int all = 0; for (int r = 1; r < 12; ++r) for (int s = 0; s < 16; ++s) all += pa.cell (r, s) ? (pa.flam (r, s) ? 2 : 1) : 0;
         proc.buildMidi (x, &n);
         check (n == all, "MIDI export: a whole part has every hit (flams as two notes)");
-        auto f = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("transistor808_test.mid");
+        auto f = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("diode808_test.mid");
         check (proc.writeMidi (x, f) && f.getSize() > 30, "MIDI export: writes a .mid file");
         juce::MidiFile back; juce::FileInputStream in (f);
         check (back.readFrom (in) && back.getNumTracks() == 1, "MIDI export: the file reads back");

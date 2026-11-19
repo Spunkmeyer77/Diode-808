@@ -1,7 +1,7 @@
-# Builds Transistor 808 on macOS, Windows and Linux.
+# Builds Diode 808 on macOS, Windows and Linux.
 # - every push / pull request: builds + installers, downloadable under the run's "Artifacts"
 # - pushing a tag like v0.1.0: also publishes a GitHub Release with all installers attached
-name: Build Transistor 808
+name: Build Diode 808
 
 on:
   push:
@@ -38,7 +38,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Read version
-        run: echo "VERSION=$(sed -nE 's/^project\(Transistor808 VERSION ([0-9.]+)\).*/\1/p' CMakeLists.txt)" >> "$GITHUB_ENV"
+        run: echo "VERSION=$(sed -nE 's/^project\(Diode808 VERSION ([0-9.]+)\).*/\1/p' CMakeLists.txt)" >> "$GITHUB_ENV"
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
@@ -70,13 +70,13 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           mkdir -p test-out
-          xvfb-run -a build/Transistor808Test_artefacts/Release/Transistor808Test test-out
+          xvfb-run -a build/Diode808Test_artefacts/Release/Diode808Test test-out
 
       - name: Check minimum macOS version (must run on old macOS)
         if: runner.os == 'macOS'
         run: |
-          R=build/Transistor808_artefacts/Release
-          for b in "$R/AU/Transistor 808.component/Contents/MacOS/Transistor 808" "$R/VST3/Transistor 808.vst3/Contents/MacOS/Transistor 808" "$R/Standalone/Transistor 808.app/Contents/MacOS/Transistor 808"; do
+          R=build/Diode808_artefacts/Release
+          for b in "$R/AU/Diode 808.component/Contents/MacOS/Diode 808" "$R/VST3/Diode 808.vst3/Contents/MacOS/Diode 808" "$R/Standalone/Diode 808.app/Contents/MacOS/Diode 808"; do
             for a in arm64 x86_64; do
               m=$(vtool -arch $a -show-build "$b" | awk '/minos/{print $2}')
               echo "$b ($a): minos $m"
@@ -88,9 +88,9 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           mkdir -p ~/Library/Audio/Plug-Ins/Components
-          cp -R "build/Transistor808_artefacts/Release/AU/Transistor 808.component" ~/Library/Audio/Plug-Ins/Components/
+          cp -R "build/Diode808_artefacts/Release/AU/Diode 808.component" ~/Library/Audio/Plug-Ins/Components/
           killall -9 AudioComponentRegistrar 2>/dev/null || true
-          auval -v aumu T808 Trlb
+          auval -v aumu D808 Trlb
 
       # ---- packaging ---------------------------------------------------------------------
       - name: Package (macOS)
@@ -98,10 +98,10 @@ jobs:
         run: |
           chmod +x tools/make_pkg.sh
           ./tools/make_pkg.sh
-          mv "dist/Transistor-808-$VERSION.pkg" "dist/Transistor-808-$VERSION-macOS.pkg"
-          cd build/Transistor808_artefacts/Release
-          ditto -c -k --keepParent "AU/Transistor 808.component" "$GITHUB_WORKSPACE/dist/Transistor-808-$VERSION-macOS-AU.zip"
-          ditto -c -k --keepParent "VST3/Transistor 808.vst3" "$GITHUB_WORKSPACE/dist/Transistor-808-$VERSION-macOS-VST3.zip"
+          mv "dist/Diode-808-$VERSION.pkg" "dist/Diode-808-$VERSION-macOS.pkg"
+          cd build/Diode808_artefacts/Release
+          ditto -c -k --keepParent "AU/Diode 808.component" "$GITHUB_WORKSPACE/dist/Diode-808-$VERSION-macOS-AU.zip"
+          ditto -c -k --keepParent "VST3/Diode 808.vst3" "$GITHUB_WORKSPACE/dist/Diode-808-$VERSION-macOS-VST3.zip"
 
       - name: Package (Windows)
         if: runner.os == 'Windows'
@@ -109,14 +109,14 @@ jobs:
         run: |
           $iscc = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress }
-          & $iscc "/DAppVersion=$env:VERSION" "installer\windows\Transistor808.iss" 2>&1 | Tee-Object -FilePath iscc.log
+          & $iscc "/DAppVersion=$env:VERSION" "installer\windows\Diode808.iss" 2>&1 | Tee-Object -FilePath iscc.log
           if ($LASTEXITCODE -ne 0) {
             "## Inno Setup errors" | Out-File -Append $env:GITHUB_STEP_SUMMARY
             Get-Content iscc.log -Tail 30 | ForEach-Object { "::error::$_" }
             exit $LASTEXITCODE
           }
-          Compress-Archive -Path "build\Transistor808_artefacts\Release\VST3\Transistor 808.vst3" `
-                           -DestinationPath "dist\Transistor-808-$env:VERSION-Windows-VST3.zip"
+          Compress-Archive -Path "build\Diode808_artefacts\Release\VST3\Diode 808.vst3" `
+                           -DestinationPath "dist\Diode-808-$env:VERSION-Windows-VST3.zip"
 
       - name: Package (Linux)
         if: runner.os == 'Linux'
@@ -125,11 +125,11 @@ jobs:
           ./tools/package_linux.sh
 
       - name: Add the manual
-        run: cp "docs/Transistor 808 Manual.pdf" "docs/Transistor 808 Update History.pdf" dist/
+        run: cp "docs/Diode 808 Manual.pdf" "docs/Diode 808 Update History.pdf" dist/
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Transistor-808-${{ env.VERSION }}-${{ matrix.name }}
+          name: Diode-808-${{ env.VERSION }}-${{ matrix.name }}
           path: dist/*
           if-no-files-found: error
 
@@ -142,7 +142,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Read version
-        run: echo "VERSION=$(sed -nE 's/^project\(Transistor808 VERSION ([0-9.]+)\).*/\1/p' CMakeLists.txt)" >> "$GITHUB_ENV"
+        run: echo "VERSION=$(sed -nE 's/^project\(Diode808 VERSION ([0-9.]+)\).*/\1/p' CMakeLists.txt)" >> "$GITHUB_ENV"
       - uses: actions/download-artifact@v4
         with:
           path: dist
@@ -151,6 +151,6 @@ jobs:
         with:
           files: dist/*
           tag_name: v${{ env.VERSION }}
-          name: Transistor 808 ${{ env.VERSION }}
-          body: "Transistor 808 ${{ env.VERSION }} - see Transistor 808 Update History.pdf. macOS: the .pkg installer; Windows: the Setup.exe; Linux: the .tar.gz. The manual is attached."
+          name: Diode 808 ${{ env.VERSION }}
+          body: "Diode 808 ${{ env.VERSION }} - see Diode 808 Update History.pdf. macOS: the .pkg installer; Windows: the Setup.exe; Linux: the .tar.gz. The manual is attached."
           generate_release_notes: false

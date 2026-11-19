@@ -445,10 +445,10 @@ AboutOverlay::AboutOverlay()
 
 juce::File AboutOverlay::writeManual()
 {
-    auto f = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("Transistor 808 Manual " JucePlugin_VersionString ".pdf");
-    const auto size = (juce::int64) BinaryData::Transistor_808_Manual_pdfSize;
+    auto f = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("Diode 808 Manual " JucePlugin_VersionString ".pdf");
+    const auto size = (juce::int64) BinaryData::Diode_808_Manual_pdfSize;
     if (! f.existsAsFile() || f.getSize() != size)
-        if (! f.replaceWithData (BinaryData::Transistor_808_Manual_pdf, (size_t) size)) return {};
+        if (! f.replaceWithData (BinaryData::Diode_808_Manual_pdf, (size_t) size)) return {};
     return f;
 }
 
@@ -492,7 +492,7 @@ void AboutOverlay::paint (juce::Graphics& g)
     g.setFont (font (58.0f));
     g.drawText ("Rhythm Composer", juce::Rectangle<float> (x0, c.getY() + 200.0f, 640.0f, 70.0f), juce::Justification::centredLeft);
     g.setFont (font (38.0f));
-    g.drawFittedText ("TRANSISTOR 808", juce::Rectangle<float> (c.getRight() - 470.0f, c.getY() + 212.0f, 420.0f, 56.0f).toNearestInt(), juce::Justification::centredRight, 1, 0.7f);
+    g.drawFittedText ("DIODE 808", juce::Rectangle<float> (c.getRight() - 470.0f, c.getY() + 212.0f, 420.0f, 56.0f).toNearestInt(), juce::Justification::centredRight, 1, 0.7f);
     g.fillRect (x0, c.getY() + 278.0f, c.getWidth() - 96.0f, 3.0f);
 
     auto line = [&] (const juce::String& label, const juce::String& value, float y)
@@ -592,7 +592,7 @@ juce::Rectangle<float> ExportPanel::card() const { return juce::Rectangle<float>
 juce::Rectangle<float> ExportPanel::tile() const { const auto c = card(); return { c.getX() + 40.0f, c.getY() + 130.0f, c.getWidth() - 80.0f, 170.0f }; }
 juce::File ExportPanel::tempFile() const
 {
-    return juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("Transistor 808 MIDI").getChildFile (juce::File::createLegalFileName (name) + ".mid");
+    return juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("Diode 808 MIDI").getChildFile (juce::File::createLegalFileName (name) + ".mid");
 }
 
 void ExportPanel::show (const Unit808Processor::ExportSpec& x)
@@ -651,7 +651,7 @@ void ExportPanel::paint (juce::Graphics& g)
     g.drawText ("EXPORT MIDI", top.withTrimmedLeft (40.0f), juce::Justification::centredLeft);
     g.setColour (kCream);
     g.setFont (font (19.0f));
-    g.drawText (name.fromFirstOccurrenceOf ("Transistor 808 ", false, false).toUpperCase(), top.withTrimmedRight (40.0f).withTrimmedLeft (330.0f), juce::Justification::centredRight, true);
+    g.drawText (name.fromFirstOccurrenceOf ("Diode 808 ", false, false).toUpperCase(), top.withTrimmedRight (40.0f).withTrimmedLeft (330.0f), juce::Justification::centredRight, true);
 
     // the clip: a dark strip with 16 little step keys; grab it and drop it on a DAW track
     const auto t = tile();
@@ -837,7 +837,7 @@ Unit808Editor::Unit808Editor (Unit808Processor& p) : AudioProcessorEditor (p), p
     auto led = [] (const char* id) { const Ctrl* c = find (id); return Led { c, image (c->a[0]), image (c->a[1]) }; };
     varA = led ("var-a-led"); varB = led ("var-b-led"); part1 = led ("part1-led"); part2 = led ("part2-led");
 
-    // POWER opens the circuit board inside (Transistor 808 keeps playing); the plate on the board, or POWER again, closes it
+    // POWER opens the circuit board inside (Diode 808 keeps playing); the plate on the board, or POWER again, closes it
     power = std::make_unique<PowerSwitch> (*find ("power"));
     power->onToggle = [this] { showBoard (! board->isVisible()); };
     content.addAndMakeVisible (*power);

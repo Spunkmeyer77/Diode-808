@@ -1,5 +1,5 @@
-// Transistor 808 sound engine v1.1 — Transistor Labs
-// The Transistor 808 circuit engine (every voice simulated from the schematics, tr808::VoiceBoard)
+// Diode 808 sound engine v1.1 — Transistor Labs
+// The 808 circuit engine (every voice simulated from the schematics, tr808::VoiceBoard)
 // behind the calls the plug-in makes: triggers, panel controls, the 14 calibration trimmers.
 #pragma once
 
@@ -19,7 +19,7 @@ namespace unit808 {
 // RS plays rim shot or claves, CP plays hand clap or maracas.
 enum Voice : int { BD = 0, SD, LT, MT, HT, RS, CP, CB, CY, OH, CH, NumVoices };
 
-// The board inside: the 14 calibration trimmers of Transistor 808, in their own units.
+// The board inside: the 14 calibration trimmers of Diode 808, in their own units.
 enum Cal : int { CbHz1 = 0, CbHz2, MetalHz3, MetalHz4, MetalHz5, MetalHz6, MetalDuty, NoiseRms, CpOffset,
                  LateClap, LateSnare, ClaveR313, MonoMs, KickTune, NumCal };
 struct CalDef { const char* id; const char* name; float lo, hi, def; const char* unit; };

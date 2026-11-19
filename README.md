@@ -1,8 +1,8 @@
-# Transistor 808
+# Diode 808
 
-**Transistor 808 Rhythm Composer** by Transistor Labs: a circuit-level 808 drum machine plug-in (AU / VST3 / LV2 /
+**Diode 808 Rhythm Composer** by Transistor Labs: a circuit-level 808 drum machine plug-in (AU / VST3 / LV2 /
 Standalone) for macOS, Windows and Linux. Every voice is a real-time simulation of the original circuits from the
-service schematics (the Transistor 808 circuit engine in `engine/`, GNU AGPLv3), behind a hardware-style panel and an
+service schematics (the circuit engine in `engine/`, GNU AGPLv3), behind a hardware-style panel and an
 808-style sequencer, with the voice board's 14 calibration trimmers inside the box.
 
 ## Using it
@@ -25,7 +25,7 @@ service schematics (the Transistor 808 circuit engine in `engine/`, GNU AGPLv3),
 MIDI notes (General MIDI drum map) play the sounds. Everything is saved with your project; every control can be
 automated and MIDI-mapped.
 
-The manual is `docs/Transistor 808 Manual.pdf`, the release notes `docs/Transistor 808 Update History.pdf`; both come with every build.
+The manual is `docs/Diode 808 Manual.pdf`, the release notes `docs/Diode 808 Update History.pdf`; both come with every build.
 
 ## Building
 

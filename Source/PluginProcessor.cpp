@@ -5,7 +5,7 @@ using namespace unit808;
 
 namespace
 {
-// panel knobs: id, name, default (0..1, the Transistor 808 panel's); shown 0..10 like the hardware
+// panel knobs: id, name, default (0..1, the Diode 808 panel's); shown 0..10 like the hardware
 struct KnobDef { const char* id; const char* name; float def; };
 const KnobDef kKnobs[23] = {
     { "ac-level", "Accent", 0.5f },
@@ -28,9 +28,9 @@ constexpr int kAutoFill[6] = { 0, 16, 12, 8, 4, 2 };
 juce::String tenths (float v, int) { return juce::String (v * 10.0f, 1); }
 } // namespace
 
-// The board inside: the Transistor 808 device's controls that are not on the front panel, in its own ranges.
+// The board inside: the Diode 808 device's controls that are not on the front panel, in its own ranges.
 // skew 0.5 = the device's exponent 2 dials. Defaults = the device's defaults (the sound of v0.3).
-// The board inside: the 14 calibration trimmers of the Transistor 808 circuit engine (dsp/CircuitEngine),
+// The board inside: the 14 calibration trimmers of the Diode 808 circuit engine (dsp/CircuitEngine),
 // in their own units; the factory values are the modelled unit's. Each one acts live.
 const Unit808Processor::TrimDef Unit808Processor::kTrims[kNumTrims] = {
 #define U808_CAL(i) { unit808::kCal[i].id, unit808::kCal[i].name, unit808::kCal[i].lo, unit808::kCal[i].hi, unit808::kCal[i].def, 1.0f, unit808::kCal[i].unit }
@@ -100,7 +100,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout Unit808Processor::createLayo
 
 Unit808Processor::Unit808Processor()
     : AudioProcessor (BusesProperties().withOutput ("Main", juce::AudioChannelSet::stereo(), true)),
-      apvts (*this, nullptr, "Transistor808", createLayout())
+      apvts (*this, nullptr, "Diode808", createLayout())
 {
     auto p = [this] (const char* id) { return apvts.getRawParameterValue (id); };
     for (int i = 0; i < 23; ++i) raw.knob[i] = p (kKnobs[i].id);
@@ -698,7 +698,7 @@ juce::String Unit808Processor::exportName (const ExportSpec& x) const
     if (x.kind == ExVariation || x.kind == ExPart || x.kind == ExRow) n << " " << (x.var == 0 ? "A" : "B");
     if (x.kind == ExPart || x.kind == ExRow) n << " " << (x.part == 0 ? "1st" : "2nd") << " part";
     if (x.kind == ExRow) n << " " << kInstrumentNames[juce::jlimit (1, kNumRows - 1, x.row)];
-    return "Transistor 808 " + n;
+    return "Diode 808 " + n;
 }
 
 juce::MidiFile Unit808Processor::buildMidi (const ExportSpec& x, int* numNotes, double* bars) const

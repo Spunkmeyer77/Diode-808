@@ -4,7 +4,7 @@
 #include "dsp/CircuitEngine.h"
 #include "Sequencer.h"
 
-// Transistor 808: the Transistor 808 sound engine behind a TR-808-style panel and sequencer.
+// Diode 808: the Diode 808 sound engine behind a TR-808-style panel and sequencer.
 //   MODE   Pattern Clear / 1st Part / 2nd Part / Manual Play / Play / Compose
 //   12 basic rhythms + 4 intro/fill patterns, each with variation A and B, each with a 1st and 2nd part
 //   12 rhythm tracks (songs). Tempo and transport always follow the DAW.
@@ -56,7 +56,7 @@ public:
     int  getInstrument() const  { return juce::jlimit (0, 11, (int) raw.instrument->load()); }
     int  getBasicVar() const    { return juce::jlimit (0, 2, (int) raw.basicVar->load()); }
     int  getFillVar() const     { return juce::jlimit (0, 1, (int) raw.fillVar->load()); }
-    bool isPowerOn() const      { return true; }   // POWER now opens the board inside; Transistor 808 never switches off
+    bool isPowerOn() const      { return true; }   // POWER now opens the board inside; Diode 808 never switches off
     bool isRunning() const      { return playStep.load() >= 0; }
     int  getPlayStep() const    { return playStep.load(); }        // step in the playing part, -1 = stopped
     int  getPlaySlot() const    { return playSlot.load(); }
@@ -87,7 +87,7 @@ public:
     void clearKey (juce::ModifierKeys mods);  // CLEAR: pattern clear, track clear, step number
     void startStopKey();                      // standalone app only (in a DAW it shows the transport)
 
-    // ---- copy / paste (rhythms only; one clipboard per Transistor 808)
+    // ---- copy / paste (rhythms only; one clipboard per Diode 808)
     enum ClipKind { ClipNone = 0, ClipRhythm, ClipVariation, ClipPart, ClipRow };
     int  clipKind() const { return clip.kind; }
     void copyRhythm (int slot);

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Renders the Transistor 808 vector kit (assets/ui_src) to 2x PNGs (assets/ui) and writes
+"""Renders the Diode 808 vector kit (assets/ui_src) to 2x PNGs (assets/ui) and writes
 Source/Layout.h from control_layout.json.  Run again whenever the artwork changes:
 
     python3 tools/rasterise_ui.py

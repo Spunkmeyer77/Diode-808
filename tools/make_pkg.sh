@@ -1,29 +1,29 @@
 #!/bin/bash
-# Builds dist/Transistor-808-<version>.pkg from an existing Release build.
+# Builds dist/Diode-808-<version>.pkg from an existing Release build.
 #
 #   ./tools/make_pkg.sh                       unsigned installer (free, recipients get a Gatekeeper warning)
 #
 #   DEV_ID_APP="Developer ID Application: Your Name (TEAMID)" \
 #   DEV_ID_INSTALLER="Developer ID Installer: Your Name (TEAMID)" \
-#   NOTARY_PROFILE="transistor808-notary" \
+#   NOTARY_PROFILE="diode808-notary" \
 #   ./tools/make_pkg.sh                       signed + notarized (needs an Apple Developer account)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-VERSION=$(sed -nE 's/^project\(Transistor808 VERSION ([0-9.]+)\).*/\1/p' CMakeLists.txt)
-ART="build/Transistor808_artefacts/Release"
+VERSION=$(sed -nE 's/^project\(Diode808 VERSION ([0-9.]+)\).*/\1/p' CMakeLists.txt)
+ART="build/Diode808_artefacts/Release"
 OUT="dist"
 WORK="$OUT/work"
-ID="com.transistorlabs.transistor808"
+ID="com.transistorlabs.diode808"
 DEV_ID_APP="${DEV_ID_APP:-}"
 DEV_ID_INSTALLER="${DEV_ID_INSTALLER:-}"
 NOTARY_PROFILE="${NOTARY_PROFILE:-}"
 
-for f in "$ART/AU/Transistor 808.component" "$ART/VST3/Transistor 808.vst3" "$ART/Standalone/Transistor 808.app"; do
+for f in "$ART/AU/Diode 808.component" "$ART/VST3/Diode 808.vst3" "$ART/Standalone/Diode 808.app"; do
     [ -e "$f" ] || { echo "Missing $f - run the Release build first."; exit 1; }
 done
 
-echo "==> Packaging Transistor 808 $VERSION"
+echo "==> Packaging Diode 808 $VERSION"
 rm -rf "$OUT"
 mkdir -p "$WORK/resources"
 
@@ -31,7 +31,7 @@ mkdir -p "$WORK/resources"
 # The build adds files to the VST3 after linking (moduleinfo.json), which breaks the linker's
 # automatic signature; macOS then refuses to load it and hosts like Live skip the VST3.
 # Without a Developer ID they get an ad-hoc signature ("-"), which Macs accept for local plug-ins.
-for f in "$ART/AU/Transistor 808.component" "$ART/VST3/Transistor 808.vst3" "$ART/Standalone/Transistor 808.app"; do
+for f in "$ART/AU/Diode 808.component" "$ART/VST3/Diode 808.vst3" "$ART/Standalone/Diode 808.app"; do
     if [ -n "$DEV_ID_APP" ]; then
         echo "==> Signing $(basename "$f") with $DEV_ID_APP"
         codesign --force --deep --options runtime --timestamp --sign "$DEV_ID_APP" "$f"
@@ -58,13 +58,13 @@ stage() {
              "$WORK/$name.pkg" >/dev/null
 }
 
-stage au   "$ART/AU/Transistor 808.component"   "/Library/Audio/Plug-Ins/Components"
-stage vst3 "$ART/VST3/Transistor 808.vst3"      "/Library/Audio/Plug-Ins/VST3"
-stage app  "$ART/Standalone/Transistor 808.app" "/Applications"
+stage au   "$ART/AU/Diode 808.component"   "/Library/Audio/Plug-Ins/Components"
+stage vst3 "$ART/VST3/Diode 808.vst3"      "/Library/Audio/Plug-Ins/VST3"
+stage app  "$ART/Standalone/Diode 808.app" "/Applications"
 
 cat > "$WORK/resources/welcome.html" <<EOF
 <html><body style="font-family:-apple-system,Helvetica;font-size:13px">
-<h2>Transistor 808 $VERSION</h2>
+<h2>Diode 808 $VERSION</h2>
 <p>circuit-level 808 Rhythm Composer &middot; Transistor Labs 2026</p>
 <p>This installs the Audio Unit, the VST3 plug-in and the standalone app.
 Click <b>Customize</b> on the next screen to skip any of them.</p>
@@ -76,7 +76,7 @@ EOF
 cat > "$WORK/distribution.xml" <<EOF
 <?xml version="1.0" encoding="utf-8"?>
 <installer-gui-script minSpecVersion="2">
-    <title>Transistor 808 $VERSION</title>
+    <title>Diode 808 $VERSION</title>
     <organization>com.transistorlabs</organization>
     <welcome file="welcome.html" mime-type="text/html"/>
     <options customize="allow" require-scripts="false" hostArchitectures="arm64,x86_64"/>
@@ -86,13 +86,13 @@ cat > "$WORK/distribution.xml" <<EOF
         <line choice="vst3"/>
         <line choice="app"/>
     </choices-outline>
-    <choice id="au" title="Audio Unit" description="Transistor 808.component for Logic, Ableton Live, GarageBand...">
+    <choice id="au" title="Audio Unit" description="Diode 808.component for Logic, Ableton Live, GarageBand...">
         <pkg-ref id="$ID.au"/>
     </choice>
-    <choice id="vst3" title="VST3" description="Transistor 808.vst3 for VST3 hosts">
+    <choice id="vst3" title="VST3" description="Diode 808.vst3 for VST3 hosts">
         <pkg-ref id="$ID.vst3"/>
     </choice>
-    <choice id="app" title="Standalone app" description="Transistor 808.app in Applications">
+    <choice id="app" title="Standalone app" description="Diode 808.app in Applications">
         <pkg-ref id="$ID.app"/>
     </choice>
     <pkg-ref id="$ID.au"   version="$VERSION" onConclusion="none">au.pkg</pkg-ref>
@@ -101,7 +101,7 @@ cat > "$WORK/distribution.xml" <<EOF
 </installer-gui-script>
 EOF
 
-PKG="$OUT/Transistor-808-$VERSION.pkg"
+PKG="$OUT/Diode-808-$VERSION.pkg"
 SIGN_ARGS=()
 [ -n "$DEV_ID_INSTALLER" ] && SIGN_ARGS=(--sign "$DEV_ID_INSTALLER" --timestamp)
 

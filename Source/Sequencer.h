@@ -1,4 +1,4 @@
-// Transistor 808 rhythm memory and the 808 play logic (no JUCE dependency, unit-testable).
+// Diode 808 rhythm memory and the 808 play logic (no JUCE dependency, unit-testable).
 #pragma once
 #include <cstdint>
 #include <vector>
