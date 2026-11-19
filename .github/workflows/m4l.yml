@@ -62,7 +62,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete m4l-1.0.0 --yes --cleanup-tag 2>/dev/null || true
-          gh release create m4l-1.0.0 --target main --title "DIODE 808 for Max for Live 1.0.0" \
-            --notes "DIODE 808 1.0.0 for Max for Live: diode808~ engine (macOS universal, Windows x64), the device and its manual." \
+          gh release delete m4l-1.0.1 --yes --cleanup-tag 2>/dev/null || true
+          gh release create m4l-1.0.1 --target main --title "DIODE 808 for Max for Live 1.0.1" \
+            --notes "DIODE 808 1.0.1 for Max for Live: diode808~ engine (macOS universal, Windows x64), the device and its manual." \
             diode808-1.0.0-macos.zip diode808-1.0.0-windows.zip "device/DIODE 808.amxd" code/diode808_seq.js code/diode808_engine.js "docs/DIODE 808 - User Manual.pdf" "docs/DIODE 808 - Update History.pdf"

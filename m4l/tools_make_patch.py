@@ -22,7 +22,15 @@ for k, v in enumerate(ORDER):
 g = boxes['g_seq']['box']['patcher']
 cb = [x for x in g['boxes'] if x['box']['id'] == 'cb'][0]['box']
 code = cb['code']
-code = code.replace('Param accamt(0.6, min=0, max=1);\n', '')
+code = code.replace('Param accamt(0.6, min=0, max=1);\n', 'Param swing(0, min=0, max=1);\nHistory pend(0);\n')
+# swing (as the AU/VST): every second 16th step is delayed by up to half a step (50 % .. 75 %)
+code = code.replace('  if (s < 0.5) { fire = 1; pos = st0 % pl0; } else { pos = (st0 % pl0); }',
+  '  if (s < 0.5) { if (st0 % 2 == 1 && swing > 0) { pend = 1; } else { fire = 1; } pos = st0 % pl0; } else { pos = (st0 % pl0); }')
+code = code.replace('''  fire = 1;
+  pos = pos + 1;''', '''  if (floor(b*16 + 0.0001) % 2 == 1 && swing > 0) { pend = 1; } else { fire = 1; pend = 0; }
+  pos = pos + 1;''')
+code = code.replace('if (run == 1 && (still > 4096', 'if (pend == 1 && s >= 0.5*swing) { fire = 1; pend = 0; }\nif (run == 1 && (still > 4096')
+assert code.count('pend') >= 5
 code = code.replace('amp = acb + (1 - acb)*((1 - accamt) + accamt*90/127);', 'amp = 0.5 + 0.5*acb;')
 for i in range(1, 16):
     code = code.replace('vb%d = bit(peek(pd, base + %d), pos)*' % (i, i), 'vb%d = bit(peek(pd, base + %d), pos)*' % (i, i))
@@ -37,6 +45,7 @@ for b in P['boxes']:
 # dials (hidden, drawn by the panel): varname, long name, short, min, max, init, unitstyle, target message
 DIALS = [
  ('d_ac','Accent','Accent',0,1,0.5,'control accent'), ('d_flam','Flam','Flam',0,1,0.4,'flam'),
+ ('d_swing','Swing','Swing',0,1,0,'swing'),
  ('d_vol','Master Volume','Volume',0,1,0.7,'control volume'), ('d_noise','Noise Level','Noise',20,350,190,'cal noiseRms'),
  ('d_bd_lvl','BD Level','Level',0,1,0.8,'control bdLevel'), ('d_bd_tone','BD Tone','Tone',0,1,0.5,'control bdTone'),
  ('d_bd_decay','BD Decay','Decay',0,1,0.5,'control bdDecay'), ('d_bd_tune','Kick Tune','Tune',-12,12,0,'cal kickTune'),
@@ -61,7 +70,7 @@ for n, (var, lng, sh, lo, hi, init, msg) in enumerate(DIALS):
          'patching_rect': [1500.0, y, 44.0, 45.0], 'saved_attribute_attributes': {'valueof': va}})
     add({'id': 'p_' + var, 'maxclass': 'newobj', 'text': 'prepend ' + msg, 'numinlets': 1, 'numoutlets': 1, 'outlettype': [''], 'patching_rect': [1560.0, y, 150.0, 22.0]})
     add({'id': 'dv_' + var, 'maxclass': 'newobj', 'text': 'prepend dv ' + var, 'numinlets': 1, 'numoutlets': 1, 'outlettype': [''], 'patching_rect': [1720.0, y, 150.0, 22.0]})
-    line(var, 0, 'p_' + var, 0); line('p_' + var, 0, 'eng', 0); line(var, 0, 'dv_' + var, 0); line('dv_' + var, 0, 'sq_ui', 0)
+    line(var, 0, 'p_' + var, 0); line('p_' + var, 0, 'g_seq' if msg == 'swing' else 'eng', 0); line(var, 0, 'dv_' + var, 0); line('dv_' + var, 0, 'sq_ui', 0)
     params[var] = [lng, sh, 0]
 P['parameters'] = {k: v for k, v in P.get('parameters', {}).items() if not k.startswith('d_')}
 P['parameters'].update(params)
