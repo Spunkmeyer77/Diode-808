@@ -20,6 +20,8 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <chrono>
+#include <cstdint>
 #include <cmath>
 #include <exception>
 #include <memory>
@@ -167,7 +169,17 @@ constexpr bool kInputAlt[kInputs] = {false, false, false, false, false, false, f
                                      false, false, false, true, true, true, true};
 
 struct Hit { long at; int input; bool accent; };
-struct Flam { long left; int input; bool accent; };
+struct QHit { int64_t at; int input; bool accent; };
+
+// Render-ahead: Max for Live calls perform every 64 samples (1.45 ms), and a voice's attack can take
+// longer than that to compute. A render thread works kAhead samples behind the input; perform only
+// queues the triggers and copies finished audio, so an attack has kAhead samples (11.6 ms at
+// 44.1 kHz) to finish. The device reports kAhead samples of latency, and Live delays the other
+// tracks to match.
+constexpr int64_t kAhead = 512;
+constexpr int64_t kRing = 1 << 15;
+constexpr uint32_t kQueue = 4096;
+constexpr long kChunk = 64;
 
 struct Engine {
     // Declared before the board: the board holds a pointer to it, so it must outlive the board.
@@ -191,8 +203,26 @@ struct Engine {
     double last[kInputs] = {};
     std::vector<float> buffer;
     std::vector<Hit> hits;
-    std::vector<Flam> flams;
     std::atomic<bool> prepared{false};
+    // audio thread -> render thread
+    std::atomic<int64_t> inPos{0};
+    std::array<QHit, kQueue> queue{};
+    std::atomic<uint32_t> qHead{0}, qTail{0};
+    // render thread -> audio thread
+    std::atomic<int64_t> outPos{0};
+    std::vector<float> ring = std::vector<float>(size_t(kRing));
+    // render thread
+    std::thread renderer;
+    std::atomic<bool> running{false};
+    std::vector<QHit> waiting;
+    void push(int64_t at, int input, bool accent) { // audio thread
+        const uint32_t h = qHead.load(std::memory_order_relaxed);
+        if (h - qTail.load(std::memory_order_acquire) >= kQueue) return; // full: drop
+        queue[h % kQueue] = {at, input, accent};
+        qHead.store(h + 1, std::memory_order_release);
+    }
+    void stop() { running.store(false); if (renderer.joinable()) renderer.join(); }
+    ~Engine() { stop(); }
 
     Engine() {
         for (size_t i = 0; i < built.size(); ++i) {
@@ -204,7 +234,7 @@ struct Engine {
         board->setParallel(parallel->workers() > 0 ? parallel.get() : nullptr);
         for (size_t i = 0; i < controlCount; ++i) values[i].store(applied.*controls[i].knob);
         hits.reserve(256);
-        flams.reserve(64);
+        waiting.reserve(kQueue);
     }
 };
 
@@ -329,51 +359,9 @@ void takeHits(Engine& engine, size_t& h, long at) {
     if (moved) applyControls(engine, false);
 }
 
-void perform(External* x, t_object*, double** ins, long, double** outs, long,
-             long frames, long, void*) {
-    auto& engine = *x->engine;
-    const NoDenormals noDenormals;
-    std::unique_lock lock(engine.boardMutex, std::try_to_lock);
-    if (!lock.owns_lock() || !engine.prepared.load(std::memory_order_relaxed)) {
-        std::fill_n(outs[0], frames, 0.0);
-        return;
-    }
-    applyControls(engine, engine.syncControls);
-    engine.syncControls = false;
-    applyLiveCalibration(engine);
-
-    // 1. this block's hits: flam main hits that fall due, then the trigger inlets
+// Render thread: one chunk of `frames` samples, with engine.hits (positions inside the chunk) set.
+void renderChunk(Engine& engine, long frames) {
     auto& hits = engine.hits;
-    hits.clear();
-    for (size_t f = 0; f < engine.flams.size();) {
-        auto& fl = engine.flams[f];
-        if (fl.left < frames) { hits.push_back({fl.left, fl.input, fl.accent}); engine.flams.erase(engine.flams.begin() + long(f)); }
-        else { fl.left -= frames; ++f; }
-    }
-    const long flamSamples = std::max<long>(1, std::lround((5.0 + 35.0 * engine.flam.load(std::memory_order_relaxed)) * 0.001 * engine.sampleRate));
-    for (int v = 0; v < kInputs; ++v) {
-        const double* in = ins[v];
-        double prev = engine.last[v];
-        for (long i = 0; i < frames; ++i) {
-            const double s = in[i];
-            if (s != 0 && prev == 0) {
-                const bool flam = s >= 3.0;
-                const bool accent = (flam ? s - 4.0 : s) >= 0.75;
-                if (flam) {                       // grace note now, unaccented; the main hit follows
-                    hits.push_back({i, v, false});
-                    const long at = i + flamSamples;
-                    if (at < frames) hits.push_back({at, v, accent});
-                    else if (engine.flams.size() < 64) engine.flams.push_back({at - frames, v, accent});
-                } else {
-                    hits.push_back({i, v, accent});
-                }
-            }
-            prev = s;
-        }
-        engine.last[v] = prev;
-    }
-    std::stable_sort(hits.begin(), hits.end(), [](const Hit& a, const Hit& b) { return a.at < b.at; });
-
     // 2. render: the common trigger rule of the 808 (one step pulse, data held pulseSamples)
     size_t h = 0;
     long position = 0;
@@ -403,7 +391,79 @@ void perform(External* x, t_object*, double** ins, long, double** outs, long,
         position += block;
         if (engine.hold) engine.hold = std::max(0, engine.hold - static_cast<int>(block));
     }
-    for (long i = 0; i < frames; ++i) outs[0][i] = out[i];
+}
+
+void renderLoop(Engine& engine) {
+    makeWorkerRealtime(0);
+    flushDenormalsForever();
+    while (engine.running.load(std::memory_order_relaxed)) {
+        uint32_t t = engine.qTail.load(std::memory_order_relaxed);
+        const uint32_t h = engine.qHead.load(std::memory_order_acquire);
+        for (; t != h; ++t) {
+            const QHit hit = engine.queue[t % kQueue];
+            auto at = std::upper_bound(engine.waiting.begin(), engine.waiting.end(), hit.at, [](int64_t v, const QHit& e) { return v < e.at; });
+            engine.waiting.insert(at, hit);
+        }
+        engine.qTail.store(t, std::memory_order_release);
+        int64_t o = engine.outPos.load(std::memory_order_relaxed);
+        const int64_t avail = engine.inPos.load(std::memory_order_acquire);
+        if (o >= avail) { std::this_thread::sleep_for(std::chrono::microseconds(150)); continue; }
+        const NoDenormals noDenormals;
+        const std::lock_guard lock(engine.boardMutex);
+        if (!engine.prepared.load(std::memory_order_relaxed)) continue;
+        applyControls(engine, engine.syncControls);
+        engine.syncControls = false;
+        applyLiveCalibration(engine);
+        const long frames = static_cast<long>(std::min<int64_t>(avail - o, kChunk));
+        engine.hits.clear();
+        size_t used = 0;
+        while (used < engine.waiting.size() && engine.waiting[used].at < o + frames) {
+            const auto& q = engine.waiting[used++];
+            engine.hits.push_back({static_cast<long>(std::max<int64_t>(0, q.at - o)), q.input, q.accent});
+        }
+        engine.waiting.erase(engine.waiting.begin(), engine.waiting.begin() + long(used));
+        renderChunk(engine, frames);
+        const float* out = engine.buffer.data();
+        for (long i = 0; i < frames; ++i) engine.ring[size_t((o + i) & (kRing - 1))] = out[i];
+        engine.outPos.store(o + frames, std::memory_order_release);
+    }
+}
+
+void startRenderer(Engine& engine) {
+    engine.running.store(true);
+    engine.renderer = std::thread([&engine] { renderLoop(engine); });
+}
+
+// Audio thread: queue this block's triggers at their exact input sample, then play what the render
+// thread finished, kAhead samples behind.
+void perform(External* x, t_object*, double** ins, long, double** outs, long,
+             long frames, long, void*) {
+    auto& engine = *x->engine;
+    if (!engine.running.load(std::memory_order_relaxed)) { std::fill_n(outs[0], frames, 0.0); return; }
+    const int64_t base = engine.inPos.load(std::memory_order_relaxed);
+    const int64_t flamSamples = std::max<int64_t>(1, std::llround((5.0 + 35.0 * engine.flam.load(std::memory_order_relaxed)) * 0.001 * engine.sampleRate));
+    for (int v = 0; v < kInputs; ++v) {
+        const double* in = ins[v];
+        double prev = engine.last[v];
+        for (long i = 0; i < frames; ++i) {
+            const double s = in[i];
+            if (s != 0 && prev == 0) {
+                const bool flam = s >= 3.0;
+                const bool accent = (flam ? s - 4.0 : s) >= 0.75;
+                if (flam) { engine.push(base + i, v, false); engine.push(base + i + flamSamples, v, accent); } // grace note, then the main hit
+                else engine.push(base + i, v, accent);
+            }
+            prev = s;
+        }
+        engine.last[v] = prev;
+    }
+    engine.inPos.store(base + frames, std::memory_order_release);
+    const int64_t ready = engine.outPos.load(std::memory_order_acquire);
+    const int64_t from = base - kAhead;
+    for (long i = 0; i < frames; ++i) {
+        const int64_t k = from + i;
+        outs[0][i] = (k < 0 || k >= ready) ? 0.0 : engine.ring[size_t(k & (kRing - 1))];
+    }
 }
 
 void calibration(External* x, t_symbol*, long count, t_atom* atoms) {
@@ -439,7 +499,6 @@ void prepareBoard(Engine& engine, double rate) {
     engine.syncControls = true;
     engine.hold = 0;
     engine.pending = 0;
-    engine.flams.clear();
     for (auto& l : engine.last) l = 0;
 }
 
@@ -461,14 +520,21 @@ void setEco(External* x, double value) {
 
 void dsp64(External* x, t_object* chain, short*, double rate, long maxFrames, long) {
     auto& engine = *x->engine;
+    engine.stop();
     engine.prepared.store(false, std::memory_order_relaxed);
     if (rate <= 0 || maxFrames <= 0) return;
     try {
-        const std::lock_guard lock(engine.boardMutex);
-        engine.buffer.resize(maxFrames);
-        prepareBoard(engine, rate);
+        {
+            const std::lock_guard lock(engine.boardMutex);
+            engine.buffer.resize(std::max<long>(maxFrames, kChunk));
+            prepareBoard(engine, rate);
+            engine.inPos.store(0); engine.outPos.store(0);
+            engine.qTail.store(engine.qHead.load());
+            engine.waiting.clear();
+            engine.prepared.store(true, std::memory_order_relaxed);
+        }
+        startRenderer(engine);
         dsp_add64(chain, reinterpret_cast<t_object*>(x), reinterpret_cast<t_perfroutine64>(perform), 0, nullptr);
-        engine.prepared.store(true, std::memory_order_relaxed);
     } catch (const std::exception& error) {
         object_error(reinterpret_cast<t_object*>(x), "Could not prepare voice board: %s", error.what());
     }
@@ -483,6 +549,7 @@ void assist(External*, void*, long io, long index, char* text) {
 
 void destroy(External* x) {
     dsp_free(&x->object);
+    if (x->engine) x->engine->stop();
     delete x->engine;
 }
 
@@ -518,5 +585,5 @@ extern "C" C74_EXPORT void ext_main(void*) {
     class_dspinit(cls);
     class_register(CLASS_BOX, cls);
     engineClass = cls;
-    post("diode808~ 1.1.0 (DIODE 808): Diode 808 circuit engine");
+    post("diode808~ 1.2.0 (DIODE 808): Diode 808 circuit engine");
 }

@@ -17,7 +17,7 @@ var POS = [[0], [1], [2], [3, 12], [4, 13], [5, 14], [6, 15], [7], [8], [9], [10
 var ALT = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 function posOf(i) { for (var p = 0; p < POS.length; p++) for (var a = 0; a < POS[p].length; a++) if (POS[p][a] === i) return [p, a]; return [0, 0]; }
 function posLabel(p) { return POS[p].length > 1 ? NAMES[POS[p][0]] + "\u00b7" + NAMES[POS[p][1]] : NAMES[POS[p][0]]; }
-var VERSION = "1.1.0";
+var VERSION = "1.2.0";
 var NOTES = [-1, 36, 38, 43, 47, 50, 37, 39, 56, 49, 42, 46, 64, 63, 62, 75]; // AC = accent
 
 var pats = [], plen = [];
@@ -251,6 +251,7 @@ function paint() {
 
     // right: patterns
     font(1, 8); textC(chain.length ? "CHAIN  " + (chainPos >= 0 ? chainPos + 1 : 1) + "/" + chain.length : "PATTERN", W - 66, 77, chain.length ? AMBER : CREAM);
+    midiButton(!!flash["MIDI"]);
     for (var p = 0; p < NP; p++) {
         var r = patRect(p), fill = PANELHI, tc = TXT;
         if (p === playPat) { fill = ORANGE; tc = INK; }
@@ -265,6 +266,40 @@ function paint() {
 }
 
 // ---------- mouse ----------
+// MIDI print button (same style as the HQ/ECO switch), right of the PATTERN title
+function MIDIB() { return [W - 37, 67, 30, 11]; }
+function midiButton(lit) {
+    var r = MIDIB();
+    col(BLACK); rect([r[0] - 1, r[1] - 1, r[2] + 2, r[3] + 2]); mgraphics.fill();
+    col(lit ? [0.28, 0.30, 0.45] : [0.30, 0.30, 0.32]); rect(r); mgraphics.fill();
+    font(1, 6.4); textC("MIDI", r[0] + r[2] / 2, r[1] + 8, lit ? AMBER : [0.92, 0.92, 0.94]);
+}
+// writes the pattern (Shift: the whole chain) as a MIDI clip into the first empty clip slot of this track
+function printMidi(all) {
+    var list = all && chain.length ? chain : [editPat], t0 = 0, notes = [];
+    for (var c = 0; c < list.length; c++) {
+        var pp = list[c], L = plen[pp];
+        for (var s2 = 0; s2 < L; s2++) {
+            var acc = pats[pp][AC][s2] ? 1 : 0;
+            for (var i2 = 1; i2 < NI; i2++) if (NOTES[i2] >= 0 && pats[pp][i2][s2]) notes.push([NOTES[i2], t0 + s2 * 0.25, 0.25, acc ? 127 : 90]);
+        }
+        t0 += L * 0.25;
+    }
+    if (t0 <= 0) return;
+    try {
+        var dev = new LiveAPI("this_device"), trk = new LiveAPI(dev.unquotedpath.replace(/ devices \d+$/, ""));
+        var n = trk.getcount("clip_slots"), slot = null;
+        for (var k3 = 0; k3 < n; k3++) { var cs = new LiveAPI(trk.unquotedpath + " clip_slots " + k3); if (+cs.get("has_clip") === 0) { slot = cs; break; } }
+        if (!slot) { post("DIODE 808: no empty clip slot on this track\n"); return; }
+        slot.call("create_clip", t0);
+        var lc = new LiveAPI(slot.unquotedpath + " clip");
+        lc.set("name", list.length > 1 ? "DIODE 808 chain" : "DIODE 808 pattern " + (editPat + 1));
+        lc.call("set_notes"); lc.call("notes", notes.length);
+        for (var q3 = 0; q3 < notes.length; q3++) lc.call("note", notes[q3][0], notes[q3][1].toFixed(4), notes[q3][2], notes[q3][3], 0);
+        lc.call("done");
+    } catch (e) { post("DIODE 808: MIDI print failed " + e + "\n"); }
+    doFlash("MIDI");
+}
 function onclick(x, y, but, cmd, shift, capslock, option) {
     dragMode = null;
     if (x >= W - 140 && y < 57) { max.launchbrowser("https://ticcoross.gumroad.com/"); return; }
@@ -287,6 +322,7 @@ function onclick(x, y, but, cmd, shift, capslock, option) {
         pats[editPat][inst][s] = paintVal;
         dragMode = "paint"; changed(); return;
     }
+    var mb = MIDIB(); if (inR(x, y, [mb[0] - 2, mb[1] - 2, mb[2] + 4, mb[3] + 4])) { printMidi(shift); return; }
     for (var p = 0; p < NP; p++) if (inR(x, y, patRect(p))) {
         if (shift) { if (chain.length < 32) chain.push(p); editPat = chain[0]; sendChain(); changed(); return; }
         if (chain.length) { chain = []; sendChain(); notifyclients(); }

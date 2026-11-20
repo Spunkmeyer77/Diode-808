@@ -26,11 +26,11 @@ jobs:
           otool -l "$bin" | grep -A4 LC_BUILD_VERSION | grep minos
           otool -l "$bin" | grep -A4 LC_BUILD_VERSION | grep -q "minos 12.0"
       - name: Zip
-        run: cd build/macos/externals && ditto -c -k --keepParent "diode808~.mxo" ../../../diode808-1.1.0-macos.zip
+        run: cd build/macos/externals && ditto -c -k --keepParent "diode808~.mxo" ../../../diode808-1.2.0-macos.zip
       - uses: actions/upload-artifact@v4
         with:
           name: mac
-          path: m4l/diode808-1.1.0-macos.zip
+          path: m4l/diode808-1.2.0-macos.zip
   windows:
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')
     runs-on: windows-2022
@@ -43,11 +43,11 @@ jobs:
         shell: pwsh
         run: |
           $f = Get-ChildItem -Recurse build/windows/externals -Filter *.mxe64 | Select-Object -First 1
-          Compress-Archive -Path $f.FullName -DestinationPath diode808-1.1.0-windows.zip
+          Compress-Archive -Path $f.FullName -DestinationPath diode808-1.2.0-windows.zip
       - uses: actions/upload-artifact@v4
         with:
           name: windows
-          path: m4l/diode808-1.1.0-windows.zip
+          path: m4l/diode808-1.2.0-windows.zip
   release:
     needs: [mac, windows]
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')
@@ -58,11 +58,11 @@ jobs:
         with:
           merge-multiple: true
           path: m4l
-      - name: Publish release v1.0.0
+      - name: Publish release v1.2.0
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete m4l-1.1.0 --yes --cleanup-tag 2>/dev/null || true
-          gh release create m4l-1.1.0 --target main --title "DIODE 808 for Max for Live 1.1.0" \
-            --notes "DIODE 808 1.1.0 for Max for Live: diode808~ engine 1.1.0 (macOS universal, Windows x64), the device and its manual." \
-            diode808-1.1.0-macos.zip diode808-1.1.0-windows.zip "device/DIODE 808.amxd" code/diode808_seq.js code/diode808_engine.js "docs/DIODE 808 - User Manual.pdf" "docs/DIODE 808 - Update History.pdf"
+          gh release delete m4l-1.2.0 --yes --cleanup-tag 2>/dev/null || true
+          gh release create m4l-1.2.0 --target main --title "DIODE 808 for Max for Live 1.2.0" \
+            --notes "DIODE 808 1.2.0 for Max for Live: render-ahead (no crackles), MIDI print button. diode808~ engine 1.2.0 (macOS universal, Windows x64), the device and its manual." \
+            diode808-1.2.0-macos.zip diode808-1.2.0-windows.zip "device/DIODE 808.amxd" code/diode808_seq.js code/diode808_engine.js "docs/DIODE 808 - User Manual.pdf" "docs/DIODE 808 - Update History.pdf"
